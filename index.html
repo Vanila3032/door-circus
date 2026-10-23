@@ -34,7 +34,6 @@
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
 
-    /* Кнопка действия теперь аккуратная, справа сверху под ником */
     #interactBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
     #interactBtn.show { display: block; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
@@ -195,22 +194,17 @@
     const BAR_X = 100;
     const BAR_TABLE = { x: BAR_X - 50, y: 0, w: 150, h: 40 };
     const DISCO_X = 3700; 
-    const DISCO_WIDTH = 250;
+    const DISCO_WIDTH = 200; 
 
-    // Мебель (добавлены места для сидения и горшки)
     const SEATS = [
-      { id: 'sofa1', x: 1400, w: 120, color: '#5a1a1a', type: 'sofa' },
-      { id: 'sofa2', x: 1950, w: 120, color: '#1a1a5a', type: 'sofa' },
-      { id: 'chair1', x: 2500, w: 60, color: '#ff6ad5', type: 'chair' },
-      { id: 'chair2', x: 2650, w: 60, color: '#7a3cff', type: 'chair' }
+      { id: 'sofa1', x: 1400, w: 100, color: '#5a1a1a', type: 'sofa' },
+      { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' },
+      { id: 'chair1', x: 2500, w: 50, color: '#ff6ad5', type: 'chair' },
+      { id: 'chair2', x: 2650, w: 50, color: '#7a3cff', type: 'chair' }
     ];
     
-    // Горшки с кустами
     const PLANTS = [
-      { x: 1250 },
-      { x: 1550 },
-      { x: 2100 },
-      { x: 2850 }
+      { x: 1250 }, { x: 1550 }, { x: 2100 }, { x: 2850 }
     ];
 
     const COLORS = {
@@ -254,7 +248,6 @@
     const discoMusic = $('discoMusic');
     
     let ws = null;
-    
     let targetBgVolume = 0.4;
     let targetDiscoVolume = 0;
 
@@ -262,20 +255,49 @@
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       ws = new WebSocket(`${protocol}${window.location.host}`);
       
-      ws.onopen = () => { ws.send(JSON.stringify({ type: 'join', nick: state.nick, appearance: state.player })); };
+      ws.onopen = () => { 
+          const password = passInput.value.trim() || "123";
+          ws.send(JSON.stringify({ type: 'join', nick: state.nick, password: password, appearance: state.player })); 
+      };
+      
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'currentPlayers') {
-          state.myId = Object.keys(data.players).find(id => data.players[id].nick === state.nick);
-          for (let id in data.players) { 
-            if (id !== state.myId) {
-              let op = data.players[id];
-              if (op.appearance) op = { ...op, ...op.appearance };
-              state.otherPlayers[id] = op; 
-            }
-          }
-          updateOnlineDisplay(Object.keys(data.players).length);
+        
+        if (data.type === 'authError') {
+            loginError.textContent = data.message;
+            state.loggedIn = false;
+            lobbyScreen.classList.remove('active');
+            loginScreen.classList.add('active');
+            return;
         }
+
+        if (data.type === 'authSuccess') {
+            // Загружаем сохраненный скин и позицию
+            let savedApp = data.player.appearance;
+            if (savedApp) {
+                state.player.colorSkin = savedApp.colorSkin;
+                state.player.colorHair = savedApp.colorHair;
+                state.player.colorEyes = savedApp.colorEyes;
+                state.player.colorShirt = savedApp.colorShirt;
+                state.player.colorPants = savedApp.colorPants;
+                state.player.hatType = savedApp.hatType;
+                state.player.hatColor = savedApp.hatColor;
+                state.player.gender = savedApp.gender;
+            }
+            state.player.x = data.player.x;
+            state.player.y = data.player.y;
+            state.player.facing = data.player.facing;
+            
+            state.myId = data.player.id;
+            for (let p of data.others) {
+               let op = p;
+               if (op.appearance) op = { ...op, ...op.appearance };
+               state.otherPlayers[op.id] = op; 
+            }
+            updateOnlineDisplay(data.others.length + 1);
+            return;
+        }
+
         if (data.type === 'playerJoined') {
           let op = data.player;
           if (op.appearance) op = { ...op, ...op.appearance };
@@ -308,14 +330,14 @@
       const nick = nickInput.value.trim();
       if (nick.length < 2) { loginError.textContent = 'Ник минимум 2 символа'; return; }
       loginError.textContent = '';
+      
       state.loggedIn = true; state.nick = nick;
       loginScreen.classList.remove('active'); lobbyScreen.classList.add('active');
       playerName.textContent = nick;
       try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
       
-      // Разблокировка аудио
       bgMusic.volume = 0.4;
-      bgMusic.play().catch(e => console.log("Браузер заблокировал музыку", e));
+      bgMusic.play().catch(e => console.log("Фон заблокирован", e));
       discoMusic.volume = 0;
       discoMusic.play().then(() => discoMusic.pause()).catch(e => {});
 
@@ -323,35 +345,50 @@
       setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
     });
 
+    logoutBtn.addEventListener('click', () => {
+        if (ws) ws.close();
+        state.loggedIn = false;
+        lobbyScreen.classList.remove('active');
+        loginScreen.classList.add('active');
+        chatPanel.classList.remove('open');
+        if (discoMusic) discoMusic.pause();
+        if (bgMusic) bgMusic.pause();
+    });
+
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') openWardrobe();
       else if (state.nearInteract && state.nearInteract.startsWith('seat')) {
         const p = state.player;
-        p.isSitting = !p.isSitting; // Переключаем состояние
+        p.isSitting = !p.isSitting;
         if (p.isSitting) {
            const seatId = state.nearInteract.replace('seat_', '');
            const seat = SEATS.find(s => s.id === seatId);
            if(seat) {
-               p.sitX = seat.x; // Запоминаем, куда сесть
-               p.facing = 1; // Смотрим вправо
+               p.sitX = seat.x;
+               p.facing = 1; 
            }
         }
       }
     });
 
+    function showToast(text) {
+      toast.textContent = text; toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
+      if (!state.loggedIn) return;
       const p = state.player;
       const speed = 4;
 
-      // Если сидим и нажали кнопку движения - встаем
       if (p.isSitting && (state.keys.left || state.keys.right || state.keys.jump)) {
         p.isSitting = false;
       }
 
       if (p.isSitting) {
         p.vx = 0;
-        p.x = p.sitX - p.w/2; // Жестко привязываем к центру сидения
+        p.x = p.sitX - p.w/2;
       } else {
         p.vx = 0;
         if (state.keys.left)  { p.vx = -speed; p.facing = -1; }
@@ -371,7 +408,6 @@
       }
       if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
 
-      // Проверка дискотеки
       const onDisco = (p.x + p.w/2 > DISCO_X - DISCO_WIDTH/2 && p.x + p.w/2 < DISCO_X + DISCO_WIDTH/2);
       
       if (onDisco !== p.isDancing) {
@@ -379,11 +415,11 @@
         if (onDisco) {
           targetBgVolume = 0;
           targetDiscoVolume = 0.6;
-          if (discoMusic.src) discoMusic.play().catch(e=>{});
+          discoMusic.play().catch(e=>console.log("Ошибка play", e));
         } else {
           targetBgVolume = 0.4;
           targetDiscoVolume = 0;
-          if (discoMusic.src) discoMusic.pause();
+          discoMusic.pause();
         }
       }
 
@@ -428,42 +464,36 @@
     }
 
     function drawFurniture(camX, floorY) {
-      // Рисуем горшки с кустами
       for (let plant of PLANTS) {
         const px = plant.x - camX;
         if (px < -100 || px > canvas.width + 100) continue;
-        
-        // Горшок
         ctx.fillStyle = '#8b4513';
         ctx.beginPath(); ctx.moveTo(px - 15, floorY - 20); ctx.lineTo(px + 15, floorY - 20); ctx.lineTo(px + 10, floorY); ctx.lineTo(px - 10, floorY); ctx.fill();
-        // Куст
         ctx.fillStyle = '#2e8b57';
         ctx.beginPath(); ctx.arc(px, floorY - 35, 20, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(px - 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(px + 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill();
       }
 
-      // Рисуем мебель
       for (let s of SEATS) {
         const sx = s.x - camX;
         if (sx < -150 || sx > canvas.width + 150) continue;
 
         if (s.type === 'sofa') {
           ctx.fillStyle = s.color;
-          ctx.fillRect(sx - s.w/2, floorY - 35, s.w, 35); // Спинка
-          ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); // Левый подлокотник
-          ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); // Правый подлокотник
-          // Подушки на диване
-          ctx.fillStyle = '#333'; 
+          ctx.fillRect(sx - s.w/2, floorY - 35, s.w, 35); 
+          ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); 
+          ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); 
+          ctx.fillStyle = '#222'; 
           ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w/2 - 10, 15); 
           ctx.fillRect(sx, floorY - 15, s.w/2 - 5, 15);
         } 
         else if (s.type === 'chair') {
           ctx.fillStyle = s.color;
-          ctx.fillRect(sx - s.w/2, floorY - 50, 10, 50); // Спинка
-          ctx.fillRect(sx - s.w/2, floorY - 20, s.w, 20); // Сидение
-          ctx.fillRect(sx - s.w/2, floorY - 20, 5, 20); // Ножка 1
-          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 5, 20); // Ножка 2
+          ctx.fillRect(sx - s.w/2, floorY - 50, 10, 50); 
+          ctx.fillRect(sx - s.w/2, floorY - 20, s.w, 20); 
+          ctx.fillRect(sx - s.w/2, floorY - 20, 5, 20); 
+          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 5, 20); 
         }
       }
     }
@@ -472,18 +502,21 @@
       const dx = DISCO_X - camX;
       if (dx < -300 || dx > canvas.width + 300) return;
 
-      // Танцпол теперь на полу (высота всего 20 пикселей)
-      const tile = 20;
-      const startX = dx - DISCO_WIDTH/2;
-      for (let x = 0; x < DISCO_WIDTH; x += tile) {
-        for (let y = 0; y < 20; y += tile) {
-           const hue = (state.time * 0.5 + x * 2 + y * 2) % 360;
-           ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-           ctx.fillRect(startX + x, floorY - 20 + y, tile - 2, tile - 2);
-        }
+      // Перекрашиваем квадратики пола
+      const tile = 40;
+      const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile;
+      const endX = startX + DISCO_WIDTH + tile;
+      
+      for (let x = startX; x < endX; x += tile) {
+        const sx = x - camX;
+        if (sx < -tile || sx > canvas.width + tile) continue;
+        
+        const hue = (state.time * 50 + x) % 360;
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.fillRect(sx, floorY, tile, canvas.height - floorY);
       }
 
-      // Диско-шар
+      // Шар и свет
       const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
       ctx.fillStyle = '#888';
       ctx.fillRect(dx - 2, 0, 4, ballY); 
@@ -491,14 +524,13 @@
       ctx.save();
       ctx.translate(dx, ballY);
       
-      // Полупрозрачный растушеванный свет
-      ctx.globalCompositeOperation = 'screen'; // Смешивание для эффекта света
+      ctx.globalCompositeOperation = 'screen';
       for(let i=0; i<5; i++){
          ctx.save();
          ctx.rotate(state.time*0.02 + i * (Math.PI*2/5));
          const grad = ctx.createLinearGradient(0, 0, 0, 400);
-         grad.addColorStop(0, 'rgba(255,255,255,0.4)');
-         grad.addColorStop(1, 'rgba(255,255,255,0)'); // Растворяется в конце
+         grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+         grad.addColorStop(1, 'rgba(255,255,255,0)');
          ctx.fillStyle = grad;
          ctx.beginPath();
          ctx.moveTo(-10, 0);
@@ -510,7 +542,6 @@
       }
       ctx.globalCompositeOperation = 'source-over';
 
-      // Сам шар (квадратики)
       for(let i=0; i<8; i++){
         for(let j=0; j<8; j++){
            ctx.fillStyle = (i+j)%2===0 ? '#ddd' : '#fff';
@@ -536,10 +567,9 @@
     function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
       const px = isPreview ? 0 : p.x - camX;
       
-      // Если сидит, мы визуально "усаживаем" его ниже (сидение дивана на высоте floorY - 15)
       let sitOffset = 0;
       if (p.isSitting && !isPreview) {
-        sitOffset = 15; // Опускаем тело на сидение
+        sitOffset = 15; 
       }
 
       const py = isPreview ? 0 : baseFloorY + p.y + sitOffset; 
@@ -570,10 +600,9 @@
 
       context.fillStyle = cPants;
       if (p.isSitting && !isPreview) {
-         // Сидячие ноги (согнуты)
-         context.fillRect(5, 35, 6, 10); // Бедро
+         context.fillRect(5, 35, 6, 10); 
          context.fillRect(13, 35, 6, 10);
-         context.fillRect(5, 45, 12, 6); // Голень вперед
+         context.fillRect(5, 45, 12, 6); 
       } else if (p.vx !== 0 && p.onGround && !isPreview) {
         const walk = Math.sin(state.time * 0.5) * 3;
         context.fillRect(5, 42 + walk, 6, 18);
@@ -583,7 +612,6 @@
       }
 
       context.fillStyle = cShirt; 
-      // Если сидит, туловище чуть короче
       if (p.isSitting && !isPreview) {
         context.fillRect(4, 20, 16, 16);
       } else {
@@ -659,7 +687,6 @@
       context.restore();
 
       if (!isPreview && p.nick) {
-        // Ник над головой
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16);
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left';
@@ -685,18 +712,65 @@
         for (let y = floorY; y < h; y += tile) {
           const sx = x - camX;
           const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0;
-          ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile);
+          ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; 
+          ctx.fillRect(sx, y, tile, tile);
         }
       }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
 
+      // Перекрашиваем пол под дискотеку ДО отрисовки мебели и персонажей
+      const discoStartX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile;
+      const discoEndX = discoStartX + DISCO_WIDTH + tile;
+      for (let x = discoStartX; x < discoEndX; x += tile) {
+        const sx = x - camX;
+        if (sx >= -tile && sx <= w + tile) {
+           const hue = (state.time * 50 + x) % 360;
+           ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+           ctx.fillRect(sx, floorY, tile - 1, h - floorY);
+        }
+      }
+
       drawFurniture(camX, floorY);
-      drawDisco(camX, floorY);
+      
+      const dx = DISCO_X - camX;
+      if (dx > -300 && dx < w + 300) {
+         // Шар и лучи (рисуем поверх пола, но под персонажами)
+         const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
+         ctx.fillStyle = '#888';
+         ctx.fillRect(dx - 2, 0, 4, ballY); 
+         
+         ctx.save();
+         ctx.translate(dx, ballY);
+         ctx.globalCompositeOperation = 'screen';
+         for(let i=0; i<5; i++){
+            ctx.save();
+            ctx.rotate(state.time*0.02 + i * (Math.PI*2/5));
+            const grad = ctx.createLinearGradient(0, 0, 0, 400);
+            grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-100, 400);
+            ctx.lineTo(100, 400);
+            ctx.lineTo(10, 0);
+            ctx.fill();
+            ctx.restore();
+         }
+         ctx.globalCompositeOperation = 'source-over';
+
+         for(let i=0; i<8; i++){
+           for(let j=0; j<8; j++){
+              ctx.fillStyle = (i+j)%2===0 ? '#ddd' : '#fff';
+              ctx.fillRect(i*4-16, j*4-16, 4, 4);
+           }
+         }
+         ctx.restore();
+      }
 
       const bx = BAR_X - camX;
       if (bx > -200 && bx < w + 200) {
         const npcBob = Math.sin(state.time * 0.3) * 3;
-        
         ctx.save(); ctx.translate(bx, BAR_TABLE.y - 50 + npcBob); ctx.scale(1.6, 1.6);
         ctx.fillStyle = '#1a1a1a'; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18);
         ctx.fillStyle = '#000000'; ctx.fillRect(4, 24, 16, 18);
