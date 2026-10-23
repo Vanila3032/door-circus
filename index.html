@@ -263,7 +263,10 @@
     let ws = null;
 
     function connectToServer() {
-      ws = new WebSocket(`ws://${window.location.host}`);
+      // ИСПРАВЛЕНО: Используем wss:// для безопасного соединения на Render
+      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      ws = new WebSocket(`${protocol}${window.location.host}`);
+      
       ws.onopen = () => { ws.send(JSON.stringify({ type: 'join', nick: state.nick, appearance: state.player })); };
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -700,4 +703,4 @@
     }
   </script>
 </body>
-                                </html>
+          </html>
