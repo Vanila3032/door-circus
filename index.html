@@ -88,6 +88,14 @@
 </head>
 <body>
 
+  <audio id="bgMusic" loop>
+    <source src="https://litter.catbox.moe/tjgteoa52abcdotm.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="discoMusic" loop>
+    <source src="https://litter.catbox.moe/tqn9a6mbf2a2qi62.mp3" type="audio/mpeg">
+  </audio>
+
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
@@ -103,7 +111,7 @@
 
   <div id="lobbyScreen" class="screen">
     <canvas id="gameCanvas"></canvas>
-    <div id="toast">Вы выпили!</div>
+    <div id="toast"></div>
     
     <div id="hud">
       <div class="top-left-panel">
@@ -132,31 +140,11 @@
           </div>
         </div>
 
-        <div class="category">
-          <div class="category-title">Цвет кожи</div>
-          <div class="options-row" id="skinOptions"></div>
-        </div>
-
-        <div class="category">
-          <div class="category-title">Цвет волос</div>
-          <div class="options-row" id="hairOptions"></div>
-        </div>
-
-        <div class="category">
-          <div class="category-title">Цвет глаз</div>
-          <div class="options-row" id="eyeOptions"></div>
-        </div>
-
-        <div class="category">
-          <div class="category-title">Цвет футболки</div>
-          <div class="options-row" id="shirtOptions"></div>
-        </div>
-
-        <div class="category">
-          <div class="category-title">Цвет штанов</div>
-          <div class="options-row" id="pantsOptions"></div>
-        </div>
-
+        <div class="category"><div class="category-title">Цвет кожи</div><div class="options-row" id="skinOptions"></div></div>
+        <div class="category"><div class="category-title">Цвет волос</div><div class="options-row" id="hairOptions"></div></div>
+        <div class="category"><div class="category-title">Цвет глаз</div><div class="options-row" id="eyeOptions"></div></div>
+        <div class="category"><div class="category-title">Цвет футболки</div><div class="options-row" id="shirtOptions"></div></div>
+        <div class="category"><div class="category-title">Цвет штанов</div><div class="options-row" id="pantsOptions"></div></div>
         <div class="category">
           <div class="category-title">Головной убор</div>
           <div class="options-row" id="hatTypeOptions" style="margin-bottom: 8px;">
@@ -197,15 +185,27 @@
   <script>
     const DOORS = [
       { id: 'draw',   x: 1200 },
-      { id: 'race',   x: 1600 },
-      { id: 'jump',   x: 2000 },
-      { id: 'jojo',   x: 2400 },
-      { id: 'tadc',   x: 2800 },
+      { id: 'race',   x: 1700 },
+      { id: 'jump',   x: 2200 },
+      { id: 'jojo',   x: 2700 },
+      { id: 'tadc',   x: 3200 },
     ];
     
     const WARDROBE_X = 800;
     const BAR_X = 100;
     const BAR_TABLE = { x: BAR_X - 50, y: 0, w: 150, h: 40 };
+    
+    // Дискотека
+    const DISCO_X = 3700; 
+    const DISCO_WIDTH = 250;
+
+    // Мебель для сидения (x - координата центра, y - уровень сидения относительно пола)
+    const SEATS = [
+      { id: 'sofa', x: 1400, w: 100, color: '#8b0000', type: 'sofa' },
+      { id: 'pouf1', x: 1950, w: 40, color: '#4a3a70', type: 'pouf' },
+      { id: 'pouf2', x: 2020, w: 40, color: '#4a3a70', type: 'pouf' },
+      { id: 'beanbag', x: 2450, w: 50, color: '#ff6ad5', type: 'beanbag' }
+    ];
 
     const COLORS = {
       skin:  ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac', '#d4af37', '#a0522d'],
@@ -221,13 +221,15 @@
       player: { 
         x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1,
         gender: 'male', colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000',
-        colorShirt: '#7a3cff', colorPants: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a'
+        colorShirt: '#7a3cff', colorPants: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a',
+        isDancing: false, isSitting: false
       },
       otherPlayers: {},
       camera: { x: 0 },
       keys: { left: false, right: false, jump: false },
       nearInteract: null,
-      worldWidth: 3200, groundY: 0,
+      worldWidth: 4100, 
+      groundY: 0,
       time: 0, blinkTimer: 0, isBlinking: false
     };
 
@@ -241,8 +243,14 @@
     const wardrobeMenu = $('wardrobeMenu'), closeWardrobeBtn = $('closeWardrobeBtn'), wearBtn = $('wearBtn');
     const interactBtn = $('interactBtn'), toast = $('toast');
     const previewCanvas = $('previewCanvas'), pCtx = previewCanvas.getContext('2d');
-
+    
+    const bgMusic = $('bgMusic');
+    const discoMusic = $('discoMusic');
+    
     let ws = null;
+    
+    let targetBgVolume = 0.4;
+    let targetDiscoVolume = 0;
 
     function connectToServer() {
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -256,10 +264,7 @@
           for (let id in data.players) { 
             if (id !== state.myId) {
               let op = data.players[id];
-              // Если скин пришел в appearance, перекидываем его в корень для отрисовки
-              if (op.appearance) {
-                op = { ...op, ...op.appearance };
-              }
+              if (op.appearance) op = { ...op, ...op.appearance };
               state.otherPlayers[id] = op; 
             }
           }
@@ -275,6 +280,8 @@
         if (data.type === 'playerMoved') {
           if (state.otherPlayers[data.id]) {
             state.otherPlayers[data.id].x = data.x; state.otherPlayers[data.id].y = data.y; state.otherPlayers[data.id].facing = data.facing;
+            state.otherPlayers[data.id].isSitting = data.isSitting;
+            state.otherPlayers[data.id].isDancing = (data.x > DISCO_X - DISCO_WIDTH/2 && data.x < DISCO_X + DISCO_WIDTH/2);
           }
         }
         if (data.type === 'appearanceChanged') {
@@ -299,12 +306,25 @@
       loginScreen.classList.remove('active'); lobbyScreen.classList.add('active');
       playerName.textContent = nick;
       try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
+      
+      bgMusic.volume = 0.4;
+      bgMusic.play().catch(e => console.log("Браузер заблокировал музыку", e));
+
       connectToServer();
       setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
     });
 
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') openWardrobe();
+      else if (state.nearInteract && state.nearInteract.startsWith('seat')) {
+        state.player.isSitting = !state.player.isSitting; // Переключаем состояние
+        if (state.player.isSitting) {
+           // Привязываемся к центру объекта
+           const seatId = state.nearInteract.replace('seat_', '');
+           const seat = SEATS.find(s => s.id === seatId);
+           if(seat) state.player.x = seat.x - state.player.w/2;
+        }
+      }
     });
 
     function showToast(text) {
@@ -317,30 +337,51 @@
       const p = state.player;
       const speed = 4;
 
-      p.vx = 0;
-      if (state.keys.left)  { p.vx = -speed; p.facing = -1; }
-      if (state.keys.right) { p.vx =  speed; p.facing =  1; }
-      p.x += p.vx;
+      // Если сидим и нажали кнопку движения - встаем
+      if (p.isSitting && (state.keys.left || state.keys.right || state.keys.jump)) {
+        p.isSitting = false;
+      }
+
+      if (p.isSitting) {
+        p.vx = 0;
+      } else {
+        p.vx = 0;
+        if (state.keys.left)  { p.vx = -speed; p.facing = -1; }
+        if (state.keys.right) { p.vx =  speed; p.facing =  1; }
+        p.x += p.vx;
+      }
+
       if (p.x < 0) p.x = 0;
       if (p.x + p.w > state.worldWidth) p.x = state.worldWidth - p.w;
 
-      // Физика падения (y = 0 это пол)
       p.vy += 0.55; 
-      const prevY = p.y;
       p.y += p.vy;
-
       p.onGround = false;
       
-      // Столкновение с барной стойкой
       if (p.x + p.w > BAR_TABLE.x && p.x < BAR_TABLE.x + BAR_TABLE.w) {
-        if (prevY + p.h <= 0 && p.y + p.h >= 0) {
-          p.y = 0 - p.h; p.vy = 0; p.onGround = true;
+        if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
+      }
+      if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
+
+      // --- ПРОВЕРКА ДИСКОТЕКИ ---
+      const onDisco = (p.x + p.w/2 > DISCO_X - DISCO_WIDTH/2 && p.x + p.w/2 < DISCO_X + DISCO_WIDTH/2);
+      
+      if (onDisco !== p.isDancing) {
+        p.isDancing = onDisco;
+        if (onDisco) {
+          targetBgVolume = 0;
+          targetDiscoVolume = 0.6;
+          if (discoMusic.src) discoMusic.play().catch(e=>{});
+        } else {
+          targetBgVolume = 0.4;
+          targetDiscoVolume = 0;
+          if (discoMusic.src) discoMusic.pause();
         }
       }
 
-      if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
+      bgMusic.volume += (targetBgVolume - bgMusic.volume) * 0.1;
+      discoMusic.volume += (targetDiscoVolume - discoMusic.volume) * 0.1;
 
-      // Камера
       const targetCam = p.x + p.w/2 - canvas.width / 2;
       state.camera.x += (targetCam - state.camera.x) * 0.15;
       if (state.camera.x < 0) state.camera.x = 0;
@@ -349,23 +390,105 @@
 
       sendTimer += dt * 16.67;
       if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) {
-        ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0;
+        ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing, isSitting: p.isSitting })); lastSentX = p.x; sendTimer = 0;
       }
 
       const px = p.x + p.w/2;
       state.nearInteract = null;
+      
       if (Math.abs(px - WARDROBE_X) < 60) { 
         state.nearInteract = 'wardrobe'; 
         interactBtn.textContent = '👗 Гардероб'; 
         interactBtn.classList.add('show'); 
-      } 
-      else { 
-        interactBtn.classList.remove('show'); 
+      } else {
+        // Проверка мебели
+        let nearSeat = null;
+        for (let s of SEATS) {
+          if (Math.abs(px - s.x) < s.w/2 + 20) { nearSeat = s; break; }
+        }
+        if (nearSeat) {
+          state.nearInteract = 'seat_' + nearSeat.id;
+          interactBtn.textContent = p.isSitting ? 'Встать' : 'Сесть';
+          interactBtn.classList.add('show');
+        } else {
+          interactBtn.classList.remove('show');
+        }
       }
 
       state.time += dt;
       state.blinkTimer += dt;
       if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
+    }
+
+    function drawFurniture(camX, floorY) {
+      for (let s of SEATS) {
+        const sx = s.x - camX;
+        if (sx < -150 || sx > canvas.width + 150) continue;
+
+        if (s.type === 'sofa') {
+          ctx.fillStyle = s.color;
+          ctx.fillRect(sx - s.w/2, floorY - 35, s.w, 35); // Спинка
+          ctx.fillRect(sx - s.w/2 - 10, floorY - 20, 15, 20); // Левый подлокотник
+          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 15, 20); // Правый подлокотник
+          ctx.fillStyle = '#6b0000'; // Сидение
+          ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15);
+        } 
+        else if (s.type === 'pouf' || s.type === 'beanbag') {
+          ctx.fillStyle = s.color;
+          ctx.beginPath();
+          if (s.type === 'pouf') {
+             ctx.ellipse(sx, floorY - 10, s.w/2, 12, 0, 0, Math.PI*2); // Пуфик
+          } else {
+             ctx.arc(sx, floorY - 10, s.w/2, 0, Math.PI, true); // Кресло-мешок
+             ctx.lineTo(sx + s.w/2, floorY);
+             ctx.lineTo(sx - s.w/2, floorY);
+          }
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawDisco(camX, floorY) {
+      const dx = DISCO_X - camX;
+      if (dx < -300 || dx > canvas.width + 300) return;
+
+      const tile = 25;
+      const startX = dx - DISCO_WIDTH/2;
+      for (let x = 0; x < DISCO_WIDTH; x += tile) {
+        for (let y = 0; y < 40; y += tile) {
+           const hue = (state.time * 0.5 + x * 2 + y * 2) % 360;
+           ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+           ctx.fillRect(startX + x, floorY - 40 + y, tile - 2, tile - 2);
+        }
+      }
+
+      const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
+      ctx.fillStyle = '#888';
+      ctx.fillRect(dx - 2, 0, 4, ballY); 
+      
+      ctx.save();
+      ctx.translate(dx, ballY);
+      ctx.rotate(state.time * 0.02);
+      
+      ctx.globalAlpha = 0.2;
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+      for(let i=0; i<5; i++){
+         ctx.fillStyle = colors[i];
+         ctx.beginPath();
+         ctx.moveTo(0,0);
+         ctx.lineTo(Math.cos(state.time*0.05 + i*1.2)*500, Math.sin(state.time*0.05 + i*1.2)*500);
+         ctx.lineTo(Math.cos(state.time*0.05 + i*1.2 + 0.3)*500, Math.sin(state.time*0.05 + i*1.2 + 0.3)*500);
+         ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+
+      for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+           ctx.fillStyle = (i+j)%2===0 ? '#ccc' : '#fff';
+           ctx.fillRect(i*4-16, j*4-16, 4, 4);
+        }
+      }
+      ctx.restore();
     }
 
     function drawPumpkin(x, y, scale = 1) {
@@ -383,16 +506,29 @@
 
     function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
       const px = isPreview ? 0 : p.x - camX;
-      // Тут мы берем p.y и прибавляем baseFloorY (высоту экрана)
-      const py = isPreview ? 0 : baseFloorY + p.y; 
+      
+      // Если персонаж сидит, мы опускаем его вниз (на уровень сидения)
+      let sitOffset = 0;
+      if (p.isSitting && !isPreview) {
+        sitOffset = 20; 
+      }
+
+      const py = isPreview ? 0 : baseFloorY + p.y + sitOffset; 
       
       context.save();
       if (!isPreview) {
         context.fillStyle = 'rgba(0,0,0,0.4)'; context.beginPath();
-        // Тень всегда рисуется на полу (baseFloorY)
         context.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); context.fill();
         context.translate(px, py);
-        if (p.vx === 0 && p.onGround) context.translate(0, Math.sin(state.time * 0.1) * 1.5);
+        
+        // Анимация дыхания/танца
+        if (p.isDancing) {
+           context.translate(0, Math.sin(state.time * 0.5) * 5); // Прыгает
+        } else if (p.isSitting) {
+           context.translate(0, Math.sin(state.time * 0.1) * 1.0); // Дышит
+        } else if (p.vx === 0 && p.onGround) {
+           context.translate(0, Math.sin(state.time * 0.1) * 1.5);
+        }
       } else {
         context.translate(150 - (p.w * 1.6)/2, 200 - (p.h * 1.6)/2);
       }
@@ -404,8 +540,13 @@
       const hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a';
       const isFemale = p.gender === 'female';
 
+      // Ноги (если сидит, они согнуты)
       context.fillStyle = cPants;
-      if (p.vx !== 0 && p.onGround && !isPreview) {
+      if (p.isSitting && !isPreview) {
+         context.fillRect(5, 42, 6, 10); // Левая нога короче
+         context.fillRect(13, 42, 6, 10); // Правая нога короче
+         context.fillRect(5, 52, 14, 6); // Ступни вперед
+      } else if (p.vx !== 0 && p.onGround && !isPreview) {
         const walk = Math.sin(state.time * 0.5) * 3;
         context.fillRect(5, 42 + walk, 6, 18);
         context.fillRect(13, 42 - walk, 6, 18);
@@ -416,7 +557,15 @@
       context.fillStyle = cShirt; context.fillRect(4, 24, 16, 18);
       context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 24, 10, 2);
 
-      context.fillStyle = cSkin; context.fillRect(0, 24, 4, 16); context.fillRect(20, 24, 4, 16);
+      context.fillStyle = cSkin; 
+      if (p.isDancing && !isPreview) {
+         // Если танцует, руки вверх
+         context.fillRect(0, 10 + Math.sin(state.time*0.5)*5, 4, 16); 
+         context.fillRect(20, 10 + Math.cos(state.time*0.5)*5, 4, 16);
+      } else {
+         context.fillRect(0, 24, 4, 16); context.fillRect(20, 24, 4, 16);
+      }
+
       context.fillStyle = cSkin; context.fillRect(3, 0, 18, 20);
       
       context.fillStyle = cHair;
@@ -496,18 +645,6 @@
       ctx.strokeStyle = 'rgba(122, 60, 255, 0.15)'; ctx.lineWidth = 15;
       for (let x = Math.floor(camX / 600) * 600; x < camX + w + 600; x += 600) { ctx.beginPath(); ctx.arc(x - camX + 300, state.groundY - 150, 250, Math.PI, 0); ctx.stroke(); }
 
-      const artX = 400 - camX;
-      if (artX > -150 && artX < w + 150) {
-        ctx.fillStyle = '#333'; ctx.fillRect(artX - 60, state.groundY - 170, 120, 140); 
-        ctx.fillStyle = '#111'; ctx.fillRect(artX - 55, state.groundY - 165, 110, 130); 
-        ctx.fillStyle = '#8b0000'; 
-        ctx.beginPath(); ctx.moveTo(artX - 55, state.groundY - 165); ctx.lineTo(artX + 55, state.groundY - 165); 
-        ctx.lineTo(artX + 30, state.groundY - 90); ctx.lineTo(artX - 30, state.groundY - 90); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(artX, state.groundY - 130, 30, 15, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(artX, state.groundY - 130, 10, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(artX, state.groundY - 130, 4, 0, Math.PI*2); ctx.fill();
-      }
-
       const floorY = state.groundY, tile = 40;
       for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) {
         for (let y = floorY; y < h; y += tile) {
@@ -518,15 +655,11 @@
       }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
 
-      for (let i = 0; i < 20; i++) {
-        const cx = ((i * 157) % state.worldWidth) - camX;
-        if (cx > -50 && cx < w + 50) {
-          const cy = floorY + 15 + (i % 3) * 10;
-          ctx.fillStyle = i % 2 === 0 ? '#ff6ad5' : '#3cff9c';
-          ctx.fillRect(cx, cy, 6, 4);
-          ctx.fillStyle = '#fff'; ctx.fillRect(cx + 2, cy - 2, 2, 2);
-        }
-      }
+      // Рисуем мебель
+      drawFurniture(camX, floorY);
+
+      // Рисуем дискотеку
+      drawDisco(camX, floorY);
 
       const bx = BAR_X - camX;
       if (bx > -200 && bx < w + 200) {
@@ -594,6 +727,7 @@
         }
       }
 
+      // Отрисовка игроков
       for (let id in state.otherPlayers) drawCharacter(state.otherPlayers[id], camX, floorY);
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
@@ -631,7 +765,7 @@
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.right = true; }, {passive: false});
     btnRight.addEventListener('touchend', (e) => { e.preventDefault(); state.keys.right = false; }, {passive: false});
     btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); tryJump(); }, {passive: false});
-    function tryJump() { if (state.player.onGround) { state.player.vy = -11; state.player.onGround = false; } }
+    function tryJump() { if (state.player.onGround && !state.player.isSitting) { state.player.vy = -11; state.player.onGround = false; } }
 
     function createColorButtons(containerId, colorsArray, type) {
       const container = $(containerId); container.innerHTML = '';
