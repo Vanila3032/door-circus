@@ -196,7 +196,6 @@
     const DISCO_X = 3700; 
     const DISCO_WIDTH = 200; 
 
-    // Убрал кресла, оставил только диваны
     const SEATS = [
       { id: 'sofa1', x: 1400, w: 100, color: '#5a1a1a', type: 'sofa' },
       { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' }
@@ -479,28 +478,22 @@
 
         if (s.type === 'sofa') {
           ctx.fillStyle = s.color;
-          // Спинка дивана
           ctx.fillRect(sx - s.w/2, floorY - 40, s.w, 40); 
-          // Подлокотники
           ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); 
           ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); 
-          // Сидение
           ctx.fillStyle = '#222'; 
           ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15); 
         }
       }
     }
 
-    // Специальная функция для отрисовки сидящего персонажа (он рисуется, только если isSitting = true)
     function drawSittingCharacter(p, camX, floorY, context = ctx) {
       const sx = p.sitX - camX;
-      const sy = floorY - 15; // Высота сидения
+      const sy = floorY - 15;
 
       context.save();
       context.translate(sx, sy);
       context.scale(1.6, 1.6);
-      
-      // Смещаем влево, чтобы тело было по центру дивана
       context.translate(-p.w/2, -p.h);
 
       const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cEyes = p.colorEyes || '#000000';
@@ -508,22 +501,18 @@
       const hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a';
       const isFemale = p.gender === 'female';
 
-      // Ноги согнуты (сидят на диване)
       context.fillStyle = cPants;
-      context.fillRect(5, 35, 6, 10); // Бедро
+      context.fillRect(5, 35, 6, 10);
       context.fillRect(13, 35, 6, 10);
-      context.fillRect(5, 45, 12, 6); // Голень вперед
+      context.fillRect(5, 45, 12, 6);
 
-      // Туловище
       context.fillStyle = cShirt; 
       context.fillRect(4, 20, 16, 16);
       context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 20, 10, 2);
 
-      // Руки
       context.fillStyle = cSkin; 
       context.fillRect(0, 20, 4, 16); context.fillRect(20, 20, 4, 16);
 
-      // Голова
       context.fillStyle = cSkin; context.fillRect(3, 0, 18, 20);
       
       context.fillStyle = cHair;
@@ -535,7 +524,6 @@
 
       context.fillStyle = cSkin; context.fillRect(1, 8, 2, 4); context.fillRect(21, 8, 2, 4);
 
-      // Глаза и рот
       if (hType !== 'mask') {
         const eyeOffset = p.facing === 1 ? 2 : 0; 
         if (state.isBlinking) {
@@ -549,7 +537,6 @@
         context.fillStyle = '#000'; context.fillRect(9, 15, 6, 2);
       }
 
-      // Головные уборы (рисуются так же)
       if (hType === 'cap') {
         context.fillStyle = hColor; context.fillRect(3, 1, 18, 5); context.fillRect(15, 3, 8, 3);
         context.fillStyle = '#ffd700'; context.fillRect(7, 2, 3, 2); context.fillRect(12, 2, 3, 2);
@@ -583,7 +570,6 @@
       }
       context.restore();
 
-      // Ник
       if (p.nick) {
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(sx - p.w/2 - 10, sy - p.h - 15, p.w + 20, 16);
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
@@ -602,7 +588,8 @@
       for (let x = startX; x < endX; x += tile) {
         const sx = x - camX;
         if (sx < -tile || sx > canvas.width + tile) continue;
-        const hue = (state.time * 50 + x) % 360;
+        // Замедлили смену цвета (было state.time * 50, стало state.time * 5)
+        const hue = (state.time * 5 + x) % 360;
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
         ctx.fillRect(sx, floorY, tile, canvas.height - floorY);
       }
@@ -791,13 +778,12 @@
       }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
 
-      // Пол дискотеки
       const discoStartX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile;
       const discoEndX = discoStartX + DISCO_WIDTH + tile;
       for (let x = discoStartX; x < discoEndX; x += tile) {
         const sx = x - camX;
         if (sx >= -tile && sx <= w + tile) {
-           const hue = (state.time * 50 + x) % 360;
+           const hue = (state.time * 5 + x) % 360;
            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
            ctx.fillRect(sx, floorY, tile - 1, h - floorY);
         }
@@ -905,7 +891,6 @@
         }
       }
 
-      // Отрисовка игроков
       for (let id in state.otherPlayers) {
         const p = state.otherPlayers[id];
         if (p.isSitting) {
@@ -915,9 +900,7 @@
         }
       }
       
-      // Отрисовка своего игрока
       if (state.player.isSitting) {
-          // Если сидим - обычную модельку не рисуем, рисуем только сидячую "копию"
           drawSittingCharacter({ ...state.player, nick: state.nick }, camX, floorY);
       } else {
           drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
@@ -1008,4 +991,4 @@
     }
   </script>
 </body>
-        </html>
+    </html>
