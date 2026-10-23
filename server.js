@@ -4,11 +4,9 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const server = http.createServer((req, res) => {
-    // Убираем query-параметры из URL
     const urlPath = req.url.split('?')[0];
     let filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
     
-    // Определяем тип файла, чтобы браузер правильно его читал
     const extname = path.extname(filePath);
     let contentType = 'text/html';
     if (extname === '.js') contentType = 'text/javascript';
@@ -32,7 +30,7 @@ let players = {};
 
 wss.on('connection', (ws) => {
     const id = Math.random().toString(36).substr(2, 9);
-    console.log('Игрок подключился:', id);
+    console.log('Player connected:', id);
 
     ws.on('message', (message) => {
         try {
@@ -62,12 +60,12 @@ wss.on('connection', (ws) => {
                 if (players[id]) broadcast({ type: 'chat', nick: players[id].nick, text: data.text }, null);
             }
         } catch (e) {
-            console.error('Ошибка в сообщении:', e);
+            console.error('Message error:', e);
         }
     });
 
     ws.on('close', () => {
-        console.log('Игрок отключился:', id);
+        console.log('Player disconnected:', id);
         if (players[id]) {
             broadcast({ type: 'playerLeft', id: id }, null);
             delete players[id];
@@ -86,5 +84,5 @@ function broadcast(data, excludeWs) {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Сервер запущен на порту ${PORT}!`);
+    console.log(`Server started on port ${PORT}!`);
 });
