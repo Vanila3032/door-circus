@@ -34,9 +34,10 @@
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
 
-    #interactBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 20px rgba(255, 106, 213, 0.6); animation: pulse 1.5s infinite; }
-    #interactBtn.show { display: block; }
-    @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } 100% { transform: translate(-50%, -50%) scale(1); } }
+    /* Кнопка действия теперь аккуратная, справа сверху под ником */
+    #interactBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
+    #interactBtn.show { display: block; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     #controls { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 10; }
     .move-btns { display: flex; gap: 15px; pointer-events: auto; }
@@ -91,7 +92,6 @@
   <audio id="bgMusic" loop>
     <source src="https://litter.catbox.moe/tjgteoa52abcdotm.mp3" type="audio/mpeg">
   </audio>
-
   <audio id="discoMusic" loop>
     <source src="https://litter.catbox.moe/tqn9a6mbf2a2qi62.mp3" type="audio/mpeg">
   </audio>
@@ -123,7 +123,7 @@
       </div>
     </div>
     
-    <button id="interactBtn">Действие</button>
+    <button id="interactBtn">Сесть</button>
 
     <div id="wardrobeMenu">
       <div class="wardrobe-controls">
@@ -194,17 +194,23 @@
     const WARDROBE_X = 800;
     const BAR_X = 100;
     const BAR_TABLE = { x: BAR_X - 50, y: 0, w: 150, h: 40 };
-    
-    // Дискотека
     const DISCO_X = 3700; 
     const DISCO_WIDTH = 250;
 
-    // Мебель для сидения (x - координата центра, y - уровень сидения относительно пола)
+    // Мебель (добавлены места для сидения и горшки)
     const SEATS = [
-      { id: 'sofa', x: 1400, w: 100, color: '#8b0000', type: 'sofa' },
-      { id: 'pouf1', x: 1950, w: 40, color: '#4a3a70', type: 'pouf' },
-      { id: 'pouf2', x: 2020, w: 40, color: '#4a3a70', type: 'pouf' },
-      { id: 'beanbag', x: 2450, w: 50, color: '#ff6ad5', type: 'beanbag' }
+      { id: 'sofa1', x: 1400, w: 120, color: '#5a1a1a', type: 'sofa' },
+      { id: 'sofa2', x: 1950, w: 120, color: '#1a1a5a', type: 'sofa' },
+      { id: 'chair1', x: 2500, w: 60, color: '#ff6ad5', type: 'chair' },
+      { id: 'chair2', x: 2650, w: 60, color: '#7a3cff', type: 'chair' }
+    ];
+    
+    // Горшки с кустами
+    const PLANTS = [
+      { x: 1250 },
+      { x: 1550 },
+      { x: 2100 },
+      { x: 2850 }
     ];
 
     const COLORS = {
@@ -222,13 +228,13 @@
         x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1,
         gender: 'male', colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000',
         colorShirt: '#7a3cff', colorPants: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a',
-        isDancing: false, isSitting: false
+        isDancing: false, isSitting: false, sitX: 0
       },
       otherPlayers: {},
       camera: { x: 0 },
       keys: { left: false, right: false, jump: false },
       nearInteract: null,
-      worldWidth: 4100, 
+      worldWidth: 4200, 
       groundY: 0,
       time: 0, blinkTimer: 0, isBlinking: false
     };
@@ -307,8 +313,11 @@
       playerName.textContent = nick;
       try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
       
+      // Разблокировка аудио
       bgMusic.volume = 0.4;
       bgMusic.play().catch(e => console.log("Браузер заблокировал музыку", e));
+      discoMusic.volume = 0;
+      discoMusic.play().then(() => discoMusic.pause()).catch(e => {});
 
       connectToServer();
       setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
@@ -317,20 +326,18 @@
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') openWardrobe();
       else if (state.nearInteract && state.nearInteract.startsWith('seat')) {
-        state.player.isSitting = !state.player.isSitting; // Переключаем состояние
-        if (state.player.isSitting) {
-           // Привязываемся к центру объекта
+        const p = state.player;
+        p.isSitting = !p.isSitting; // Переключаем состояние
+        if (p.isSitting) {
            const seatId = state.nearInteract.replace('seat_', '');
            const seat = SEATS.find(s => s.id === seatId);
-           if(seat) state.player.x = seat.x - state.player.w/2;
+           if(seat) {
+               p.sitX = seat.x; // Запоминаем, куда сесть
+               p.facing = 1; // Смотрим вправо
+           }
         }
       }
     });
-
-    function showToast(text) {
-      toast.textContent = text; toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
 
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
@@ -344,6 +351,7 @@
 
       if (p.isSitting) {
         p.vx = 0;
+        p.x = p.sitX - p.w/2; // Жестко привязываем к центру сидения
       } else {
         p.vx = 0;
         if (state.keys.left)  { p.vx = -speed; p.facing = -1; }
@@ -363,7 +371,7 @@
       }
       if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
 
-      // --- ПРОВЕРКА ДИСКОТЕКИ ---
+      // Проверка дискотеки
       const onDisco = (p.x + p.w/2 > DISCO_X - DISCO_WIDTH/2 && p.x + p.w/2 < DISCO_X + DISCO_WIDTH/2);
       
       if (onDisco !== p.isDancing) {
@@ -401,7 +409,6 @@
         interactBtn.textContent = '👗 Гардероб'; 
         interactBtn.classList.add('show'); 
       } else {
-        // Проверка мебели
         let nearSeat = null;
         for (let s of SEATS) {
           if (Math.abs(px - s.x) < s.w/2 + 20) { nearSeat = s; break; }
@@ -421,6 +428,22 @@
     }
 
     function drawFurniture(camX, floorY) {
+      // Рисуем горшки с кустами
+      for (let plant of PLANTS) {
+        const px = plant.x - camX;
+        if (px < -100 || px > canvas.width + 100) continue;
+        
+        // Горшок
+        ctx.fillStyle = '#8b4513';
+        ctx.beginPath(); ctx.moveTo(px - 15, floorY - 20); ctx.lineTo(px + 15, floorY - 20); ctx.lineTo(px + 10, floorY); ctx.lineTo(px - 10, floorY); ctx.fill();
+        // Куст
+        ctx.fillStyle = '#2e8b57';
+        ctx.beginPath(); ctx.arc(px, floorY - 35, 20, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px - 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill();
+      }
+
+      // Рисуем мебель
       for (let s of SEATS) {
         const sx = s.x - camX;
         if (sx < -150 || sx > canvas.width + 150) continue;
@@ -428,22 +451,19 @@
         if (s.type === 'sofa') {
           ctx.fillStyle = s.color;
           ctx.fillRect(sx - s.w/2, floorY - 35, s.w, 35); // Спинка
-          ctx.fillRect(sx - s.w/2 - 10, floorY - 20, 15, 20); // Левый подлокотник
-          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 15, 20); // Правый подлокотник
-          ctx.fillStyle = '#6b0000'; // Сидение
-          ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15);
+          ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); // Левый подлокотник
+          ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); // Правый подлокотник
+          // Подушки на диване
+          ctx.fillStyle = '#333'; 
+          ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w/2 - 10, 15); 
+          ctx.fillRect(sx, floorY - 15, s.w/2 - 5, 15);
         } 
-        else if (s.type === 'pouf' || s.type === 'beanbag') {
+        else if (s.type === 'chair') {
           ctx.fillStyle = s.color;
-          ctx.beginPath();
-          if (s.type === 'pouf') {
-             ctx.ellipse(sx, floorY - 10, s.w/2, 12, 0, 0, Math.PI*2); // Пуфик
-          } else {
-             ctx.arc(sx, floorY - 10, s.w/2, 0, Math.PI, true); // Кресло-мешок
-             ctx.lineTo(sx + s.w/2, floorY);
-             ctx.lineTo(sx - s.w/2, floorY);
-          }
-          ctx.fill();
+          ctx.fillRect(sx - s.w/2, floorY - 50, 10, 50); // Спинка
+          ctx.fillRect(sx - s.w/2, floorY - 20, s.w, 20); // Сидение
+          ctx.fillRect(sx - s.w/2, floorY - 20, 5, 20); // Ножка 1
+          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 5, 20); // Ножка 2
         }
       }
     }
@@ -452,39 +472,48 @@
       const dx = DISCO_X - camX;
       if (dx < -300 || dx > canvas.width + 300) return;
 
-      const tile = 25;
+      // Танцпол теперь на полу (высота всего 20 пикселей)
+      const tile = 20;
       const startX = dx - DISCO_WIDTH/2;
       for (let x = 0; x < DISCO_WIDTH; x += tile) {
-        for (let y = 0; y < 40; y += tile) {
+        for (let y = 0; y < 20; y += tile) {
            const hue = (state.time * 0.5 + x * 2 + y * 2) % 360;
            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-           ctx.fillRect(startX + x, floorY - 40 + y, tile - 2, tile - 2);
+           ctx.fillRect(startX + x, floorY - 20 + y, tile - 2, tile - 2);
         }
       }
 
+      // Диско-шар
       const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
       ctx.fillStyle = '#888';
       ctx.fillRect(dx - 2, 0, 4, ballY); 
       
       ctx.save();
       ctx.translate(dx, ballY);
-      ctx.rotate(state.time * 0.02);
       
-      ctx.globalAlpha = 0.2;
-      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+      // Полупрозрачный растушеванный свет
+      ctx.globalCompositeOperation = 'screen'; // Смешивание для эффекта света
       for(let i=0; i<5; i++){
-         ctx.fillStyle = colors[i];
+         ctx.save();
+         ctx.rotate(state.time*0.02 + i * (Math.PI*2/5));
+         const grad = ctx.createLinearGradient(0, 0, 0, 400);
+         grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+         grad.addColorStop(1, 'rgba(255,255,255,0)'); // Растворяется в конце
+         ctx.fillStyle = grad;
          ctx.beginPath();
-         ctx.moveTo(0,0);
-         ctx.lineTo(Math.cos(state.time*0.05 + i*1.2)*500, Math.sin(state.time*0.05 + i*1.2)*500);
-         ctx.lineTo(Math.cos(state.time*0.05 + i*1.2 + 0.3)*500, Math.sin(state.time*0.05 + i*1.2 + 0.3)*500);
+         ctx.moveTo(-10, 0);
+         ctx.lineTo(-100, 400);
+         ctx.lineTo(100, 400);
+         ctx.lineTo(10, 0);
          ctx.fill();
+         ctx.restore();
       }
-      ctx.globalAlpha = 1.0;
+      ctx.globalCompositeOperation = 'source-over';
 
+      // Сам шар (квадратики)
       for(let i=0; i<8; i++){
         for(let j=0; j<8; j++){
-           ctx.fillStyle = (i+j)%2===0 ? '#ccc' : '#fff';
+           ctx.fillStyle = (i+j)%2===0 ? '#ddd' : '#fff';
            ctx.fillRect(i*4-16, j*4-16, 4, 4);
         }
       }
@@ -507,10 +536,10 @@
     function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
       const px = isPreview ? 0 : p.x - camX;
       
-      // Если персонаж сидит, мы опускаем его вниз (на уровень сидения)
+      // Если сидит, мы визуально "усаживаем" его ниже (сидение дивана на высоте floorY - 15)
       let sitOffset = 0;
       if (p.isSitting && !isPreview) {
-        sitOffset = 20; 
+        sitOffset = 15; // Опускаем тело на сидение
       }
 
       const py = isPreview ? 0 : baseFloorY + p.y + sitOffset; 
@@ -521,11 +550,10 @@
         context.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); context.fill();
         context.translate(px, py);
         
-        // Анимация дыхания/танца
         if (p.isDancing) {
-           context.translate(0, Math.sin(state.time * 0.5) * 5); // Прыгает
+           context.translate(0, Math.sin(state.time * 0.5) * 5);
         } else if (p.isSitting) {
-           context.translate(0, Math.sin(state.time * 0.1) * 1.0); // Дышит
+           context.translate(0, Math.sin(state.time * 0.1) * 1.0);
         } else if (p.vx === 0 && p.onGround) {
            context.translate(0, Math.sin(state.time * 0.1) * 1.5);
         }
@@ -540,12 +568,12 @@
       const hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a';
       const isFemale = p.gender === 'female';
 
-      // Ноги (если сидит, они согнуты)
       context.fillStyle = cPants;
       if (p.isSitting && !isPreview) {
-         context.fillRect(5, 42, 6, 10); // Левая нога короче
-         context.fillRect(13, 42, 6, 10); // Правая нога короче
-         context.fillRect(5, 52, 14, 6); // Ступни вперед
+         // Сидячие ноги (согнуты)
+         context.fillRect(5, 35, 6, 10); // Бедро
+         context.fillRect(13, 35, 6, 10);
+         context.fillRect(5, 45, 12, 6); // Голень вперед
       } else if (p.vx !== 0 && p.onGround && !isPreview) {
         const walk = Math.sin(state.time * 0.5) * 3;
         context.fillRect(5, 42 + walk, 6, 18);
@@ -554,12 +582,18 @@
         context.fillRect(5, 42, 6, 18); context.fillRect(13, 42, 6, 18);
       }
 
-      context.fillStyle = cShirt; context.fillRect(4, 24, 16, 18);
+      context.fillStyle = cShirt; 
+      // Если сидит, туловище чуть короче
+      if (p.isSitting && !isPreview) {
+        context.fillRect(4, 20, 16, 16);
+      } else {
+        context.fillRect(4, 24, 16, 18);
+      }
+      
       context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 24, 10, 2);
 
       context.fillStyle = cSkin; 
       if (p.isDancing && !isPreview) {
-         // Если танцует, руки вверх
          context.fillRect(0, 10 + Math.sin(state.time*0.5)*5, 4, 16); 
          context.fillRect(20, 10 + Math.cos(state.time*0.5)*5, 4, 16);
       } else {
@@ -625,6 +659,7 @@
       context.restore();
 
       if (!isPreview && p.nick) {
+        // Ник над головой
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16);
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left';
@@ -655,10 +690,7 @@
       }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
 
-      // Рисуем мебель
       drawFurniture(camX, floorY);
-
-      // Рисуем дискотеку
       drawDisco(camX, floorY);
 
       const bx = BAR_X - camX;
@@ -727,7 +759,6 @@
         }
       }
 
-      // Отрисовка игроков
       for (let id in state.otherPlayers) drawCharacter(state.otherPlayers[id], camX, floorY);
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
