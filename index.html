@@ -10,7 +10,6 @@
     .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
     .screen.active { display: flex; }
 
-    /* ВХОД */
     #loginScreen { align-items: center; justify-content: center; background: radial-gradient(circle at 50% 20%, #2a1040 0%, #0a0a12 80%); z-index: 50; }
     .login-box { width: 90%; max-width: 420px; padding: 30px 24px; background: rgba(15, 10, 25, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(122, 60, 255, 0.4); border-radius: 20px; box-shadow: 0 0 30px rgba(122, 60, 255, 0.2); text-align: center; }
     .title-glow h1 { font-size: 32px; color: #ff6ad5; text-shadow: 0 0 10px #ff6ad5, 0 0 20px #ff6ad5; letter-spacing: 2px; margin-bottom: 8px; }
@@ -21,13 +20,9 @@
     .login-box button { width: 100%; padding: 16px; background: linear-gradient(135deg, #7a3cff, #ff6ad5); border: none; border-radius: 10px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
     .error { color: #ff5566; font-size: 13px; margin-top: 15px; min-height: 18px; }
 
-    /* ИГРА */
     #lobbyScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; overflow: hidden; }
     #gameCanvas { width: 100%; height: 100%; display: block; }
     
-    #drunkEffect { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle, transparent 40%, rgba(50, 0, 50, 0.6) 100%); pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 5; }
-    #drunkEffect.active { opacity: 1; }
-
     #hud { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; }
     
     .top-left-panel { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -62,7 +57,6 @@
     #chatInput { flex: 1; padding: 12px; background: #1a1428; border: 1px solid #4a3a70; border-radius: 8px; color: #fff; outline: none; }
     #sendBtn { width: 50px; background: linear-gradient(135deg, #7a3cff, #ff6ad5); border: none; border-radius: 8px; color: #fff; font-size: 18px; cursor: pointer; }
 
-    /* ГАРДЕРОБ */
     #wardrobeMenu { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 5, 18, 0.98); z-index: 40; display: none; flex-direction: row; overflow: hidden; }
     #wardrobeMenu.open { display: flex; }
     
@@ -109,7 +103,6 @@
 
   <div id="lobbyScreen" class="screen">
     <canvas id="gameCanvas"></canvas>
-    <div id="drunkEffect"></div>
     <div id="toast">Вы выпили!</div>
     
     <div id="hud">
@@ -212,13 +205,7 @@
     
     const WARDROBE_X = 800;
     const BAR_X = 100;
-
-    const BAR_TABLE = {
-      x: BAR_X - 50,
-      y: 0,
-      w: 150,
-      h: 40 
-    };
+    const BAR_TABLE = { x: BAR_X - 50, y: 0, w: 150, h: 40 };
 
     const COLORS = {
       skin:  ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac', '#d4af37', '#a0522d'],
@@ -233,20 +220,15 @@
       loggedIn: false, nick: '', myId: null,
       player: { 
         x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1,
-        gender: 'male',
-        colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000',
-        colorShirt: '#7a3cff', colorPants: '#1a1a1a',
-        hatType: 'none', hatColor: '#1a1a1a'
+        gender: 'male', colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000',
+        colorShirt: '#7a3cff', colorPants: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a'
       },
       otherPlayers: {},
       camera: { x: 0 },
       keys: { left: false, right: false, jump: false },
       nearInteract: null,
       worldWidth: 3200, groundY: 0,
-      time: 0,
-      drunkTimer: 0,
-      blinkTimer: 0, 
-      isBlinking: false
+      time: 0, blinkTimer: 0, isBlinking: false
     };
 
     const $ = (id) => document.getElementById(id);
@@ -257,13 +239,12 @@
     const canvas = $('gameCanvas'), ctx = canvas.getContext('2d');
     const chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn');
     const wardrobeMenu = $('wardrobeMenu'), closeWardrobeBtn = $('closeWardrobeBtn'), wearBtn = $('wearBtn');
-    const interactBtn = $('interactBtn'), drunkEffect = $('drunkEffect'), toast = $('toast');
+    const interactBtn = $('interactBtn'), toast = $('toast');
     const previewCanvas = $('previewCanvas'), pCtx = previewCanvas.getContext('2d');
 
     let ws = null;
 
     function connectToServer() {
-      // ИСПРАВЛЕНО: Используем wss:// для безопасного соединения на Render
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       ws = new WebSocket(`${protocol}${window.location.host}`);
       
@@ -272,13 +253,24 @@
         const data = JSON.parse(event.data);
         if (data.type === 'currentPlayers') {
           state.myId = Object.keys(data.players).find(id => data.players[id].nick === state.nick);
-          for (let id in data.players) { if (id !== state.myId) state.otherPlayers[id] = data.players[id]; }
+          for (let id in data.players) { 
+            if (id !== state.myId) {
+              let op = data.players[id];
+              // Если скин пришел в appearance, перекидываем его в корень для отрисовки
+              if (op.appearance) {
+                op = { ...op, ...op.appearance };
+              }
+              state.otherPlayers[id] = op; 
+            }
+          }
           updateOnlineDisplay(Object.keys(data.players).length);
         }
         if (data.type === 'playerJoined') {
-          state.otherPlayers[data.player.id] = data.player;
+          let op = data.player;
+          if (op.appearance) op = { ...op, ...op.appearance };
+          state.otherPlayers[op.id] = op;
           updateOnlineDisplay(Object.keys(state.otherPlayers).length + 1);
-          addSystemMessage(`${data.player.nick} зашел`);
+          addSystemMessage(`${op.nick} зашел`);
         }
         if (data.type === 'playerMoved') {
           if (state.otherPlayers[data.id]) {
@@ -286,7 +278,9 @@
           }
         }
         if (data.type === 'appearanceChanged') {
-           if (state.otherPlayers[data.id]) state.otherPlayers[data.id].appearance = data.appearance;
+           if (state.otherPlayers[data.id] && data.appearance) {
+             state.otherPlayers[data.id] = { ...state.otherPlayers[data.id], ...data.appearance };
+           }
         }
         if (data.type === 'playerLeft') {
           const p = state.otherPlayers[data.id];
@@ -311,11 +305,6 @@
 
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') openWardrobe();
-      else if (state.nearInteract === 'bar') {
-        const drink = Math.random() > 0.5 ? 'Виски' : 'Абсент';
-        showToast(`Бармен наливает вам ${drink}! +Скорость 10 сек.`);
-        state.drunkTimer = 10 * 60; drunkEffect.classList.add('active');
-      }
     });
 
     function showToast(text) {
@@ -326,8 +315,7 @@
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
       const p = state.player;
-      let speed = 4;
-      if (state.drunkTimer > 0) { state.drunkTimer -= dt; speed = 6.5; if (state.drunkTimer <= 0) drunkEffect.classList.remove('active'); }
+      const speed = 4;
 
       p.vx = 0;
       if (state.keys.left)  { p.vx = -speed; p.facing = -1; }
@@ -336,23 +324,23 @@
       if (p.x < 0) p.x = 0;
       if (p.x + p.w > state.worldWidth) p.x = state.worldWidth - p.w;
 
+      // Физика падения (y = 0 это пол)
       p.vy += 0.55; 
       const prevY = p.y;
       p.y += p.vy;
 
       p.onGround = false;
       
+      // Столкновение с барной стойкой
       if (p.x + p.w > BAR_TABLE.x && p.x < BAR_TABLE.x + BAR_TABLE.w) {
-        if (prevY + p.h <= BAR_TABLE.y && p.y + p.h >= BAR_TABLE.y) {
-          p.y = BAR_TABLE.y - p.h; p.vy = 0; p.onGround = true;
-        } else if (p.y + p.h > BAR_TABLE.y && p.y < BAR_TABLE.y + BAR_TABLE.h) {
-          if (p.vx > 0) p.x = BAR_TABLE.x - p.w;
-          else if (p.vx < 0) p.x = BAR_TABLE.x + BAR_TABLE.w;
+        if (prevY + p.h <= 0 && p.y + p.h >= 0) {
+          p.y = 0 - p.h; p.vy = 0; p.onGround = true;
         }
       }
 
-      if (p.y + p.h >= state.groundY) { p.y = state.groundY - p.h; p.vy = 0; p.onGround = true; }
+      if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
 
+      // Камера
       const targetCam = p.x + p.w/2 - canvas.width / 2;
       state.camera.x += (targetCam - state.camera.x) * 0.15;
       if (state.camera.x < 0) state.camera.x = 0;
@@ -366,9 +354,14 @@
 
       const px = p.x + p.w/2;
       state.nearInteract = null;
-      if (Math.abs(px - WARDROBE_X) < 60) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); } 
-      else if (px < BAR_X + 120) { state.nearInteract = 'bar'; interactBtn.textContent = '🥃 Напиток'; interactBtn.classList.add('show'); } 
-      else { interactBtn.classList.remove('show'); }
+      if (Math.abs(px - WARDROBE_X) < 60) { 
+        state.nearInteract = 'wardrobe'; 
+        interactBtn.textContent = '👗 Гардероб'; 
+        interactBtn.classList.add('show'); 
+      } 
+      else { 
+        interactBtn.classList.remove('show'); 
+      }
 
       state.time += dt;
       state.blinkTimer += dt;
@@ -376,41 +369,28 @@
     }
 
     function drawPumpkin(x, y, scale = 1) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(scale, scale);
-      
-      ctx.fillStyle = '#ff8c00';
-      ctx.beginPath(); ctx.ellipse(0, 0, 22, 15, 0, 0, Math.PI*2); ctx.fill();
-      
+      ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+      ctx.fillStyle = '#ff8c00'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 15, 0, 0, Math.PI*2); ctx.fill();
       ctx.strokeStyle = '#cc6600'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(0, 0, 22, 15, 0, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.ellipse(0, 0, 14, 15, 0, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.ellipse(0, 0, 6, 15, 0, 0, Math.PI*2); ctx.stroke();
-      
       ctx.fillStyle = '#228b22'; ctx.fillRect(-3, -20, 6, 6);
-      
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(-8, -4, 3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(8, -4, 3, 0, Math.PI*2); ctx.fill();
-      
-      ctx.beginPath(); 
-      ctx.arc(0, 2, 10, 0, Math.PI, false); 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#000';
-      ctx.stroke();
-      
+      ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(-8, -4, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(8, -4, 3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 2, 10, 0, Math.PI, false); ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
       ctx.restore();
     }
 
-    function drawCharacter(p, camX, floorY, isPreview = false, context = ctx) {
+    function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
       const px = isPreview ? 0 : p.x - camX;
-      const py = isPreview ? 0 : p.y;
+      // Тут мы берем p.y и прибавляем baseFloorY (высоту экрана)
+      const py = isPreview ? 0 : baseFloorY + p.y; 
       
       context.save();
       if (!isPreview) {
         context.fillStyle = 'rgba(0,0,0,0.4)'; context.beginPath();
-        context.ellipse(px + p.w/2, floorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); context.fill();
+        // Тень всегда рисуется на полу (baseFloorY)
+        context.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); context.fill();
         context.translate(px, py);
         if (p.vx === 0 && p.onGround) context.translate(0, Math.sin(state.time * 0.1) * 1.5);
       } else {
@@ -437,7 +417,6 @@
       context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 24, 10, 2);
 
       context.fillStyle = cSkin; context.fillRect(0, 24, 4, 16); context.fillRect(20, 24, 4, 16);
-
       context.fillStyle = cSkin; context.fillRect(3, 0, 18, 20);
       
       context.fillStyle = cHair;
@@ -703,4 +682,4 @@
     }
   </script>
 </body>
-          </html>
+  </html>
