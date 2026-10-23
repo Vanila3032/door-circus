@@ -37,14 +37,23 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message);
 
             if (data.type === 'join') {
-                players[id] = { id: id, nick: data.nick, x: 100, y: 0, facing: 1, appearance: data.appearance };
+                players[id] = { 
+                    id: id, 
+                    nick: data.nick, 
+                    x: 500, 
+                    y: 0, 
+                    facing: 1, 
+                    appearance: data.appearance 
+                };
                 ws.send(JSON.stringify({ type: 'currentPlayers', players: players }));
                 broadcast({ type: 'playerJoined', player: players[id] }, ws);
             }
 
             if (data.type === 'move') {
                 if (players[id]) {
-                    players[id].x = data.x; players[id].y = data.y; players[id].facing = data.facing;
+                    players[id].x = data.x; 
+                    players[id].y = data.y; 
+                    players[id].facing = data.facing;
                     broadcast({ type: 'playerMoved', id: id, x: data.x, y: data.y, facing: data.facing }, ws);
                 }
             }
@@ -65,7 +74,6 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        console.log('Player disconnected:', id);
         if (players[id]) {
             broadcast({ type: 'playerLeft', id: id }, null);
             delete players[id];
