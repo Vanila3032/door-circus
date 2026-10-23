@@ -196,15 +196,14 @@
     const DISCO_X = 3700; 
     const DISCO_WIDTH = 200; 
 
+    // Убрал кресла, оставил только диваны
     const SEATS = [
       { id: 'sofa1', x: 1400, w: 100, color: '#5a1a1a', type: 'sofa' },
-      { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' },
-      { id: 'chair1', x: 2500, w: 50, color: '#ff6ad5', type: 'chair' },
-      { id: 'chair2', x: 2650, w: 50, color: '#7a3cff', type: 'chair' }
+      { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' }
     ];
     
     const PLANTS = [
-      { x: 1250 }, { x: 1550 }, { x: 2100 }, { x: 2850 }
+      { x: 1250 }, { x: 1550 }, { x: 2100 }, { x: 2350 }
     ];
 
     const COLORS = {
@@ -272,7 +271,6 @@
         }
 
         if (data.type === 'authSuccess') {
-            // Загружаем сохраненный скин и позицию
             let savedApp = data.player.appearance;
             if (savedApp) {
                 state.player.colorSkin = savedApp.colorSkin;
@@ -481,20 +479,115 @@
 
         if (s.type === 'sofa') {
           ctx.fillStyle = s.color;
-          ctx.fillRect(sx - s.w/2, floorY - 35, s.w, 35); 
+          // Спинка дивана
+          ctx.fillRect(sx - s.w/2, floorY - 40, s.w, 40); 
+          // Подлокотники
           ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); 
           ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); 
+          // Сидение
           ctx.fillStyle = '#222'; 
-          ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w/2 - 10, 15); 
-          ctx.fillRect(sx, floorY - 15, s.w/2 - 5, 15);
-        } 
-        else if (s.type === 'chair') {
-          ctx.fillStyle = s.color;
-          ctx.fillRect(sx - s.w/2, floorY - 50, 10, 50); 
-          ctx.fillRect(sx - s.w/2, floorY - 20, s.w, 20); 
-          ctx.fillRect(sx - s.w/2, floorY - 20, 5, 20); 
-          ctx.fillRect(sx + s.w/2 - 5, floorY - 20, 5, 20); 
+          ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15); 
         }
+      }
+    }
+
+    // Специальная функция для отрисовки сидящего персонажа (он рисуется, только если isSitting = true)
+    function drawSittingCharacter(p, camX, floorY, context = ctx) {
+      const sx = p.sitX - camX;
+      const sy = floorY - 15; // Высота сидения
+
+      context.save();
+      context.translate(sx, sy);
+      context.scale(1.6, 1.6);
+      
+      // Смещаем влево, чтобы тело было по центру дивана
+      context.translate(-p.w/2, -p.h);
+
+      const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cEyes = p.colorEyes || '#000000';
+      const cShirt = p.colorShirt || '#7a3cff', cPants = p.colorPants || '#1a1a1a';
+      const hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a';
+      const isFemale = p.gender === 'female';
+
+      // Ноги согнуты (сидят на диване)
+      context.fillStyle = cPants;
+      context.fillRect(5, 35, 6, 10); // Бедро
+      context.fillRect(13, 35, 6, 10);
+      context.fillRect(5, 45, 12, 6); // Голень вперед
+
+      // Туловище
+      context.fillStyle = cShirt; 
+      context.fillRect(4, 20, 16, 16);
+      context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 20, 10, 2);
+
+      // Руки
+      context.fillStyle = cSkin; 
+      context.fillRect(0, 20, 4, 16); context.fillRect(20, 20, 4, 16);
+
+      // Голова
+      context.fillStyle = cSkin; context.fillRect(3, 0, 18, 20);
+      
+      context.fillStyle = cHair;
+      if (isFemale) {
+        context.fillRect(2, 0, 20, 8); context.fillRect(1, 8, 4, 14); context.fillRect(19, 8, 4, 14);
+      } else {
+        context.fillRect(3, 0, 18, 6);
+      }
+
+      context.fillStyle = cSkin; context.fillRect(1, 8, 2, 4); context.fillRect(21, 8, 2, 4);
+
+      // Глаза и рот
+      if (hType !== 'mask') {
+        const eyeOffset = p.facing === 1 ? 2 : 0; 
+        if (state.isBlinking) {
+          context.fillStyle = cSkin; context.fillRect(6 + eyeOffset, 6, 5, 6); context.fillRect(13 + eyeOffset, 6, 5, 6);
+          context.fillStyle = '#000'; context.fillRect(6 + eyeOffset, 8, 5, 1); context.fillRect(13 + eyeOffset, 8, 5, 1);
+        } else {
+          context.fillStyle = '#fff'; context.fillRect(6 + eyeOffset, 6, 5, 6); context.fillRect(13 + eyeOffset, 6, 5, 6);
+          context.fillStyle = cEyes; context.fillRect(8 + eyeOffset, 8, 2, 3); context.fillRect(15 + eyeOffset, 8, 2, 3);
+        }
+        if (isFemale) { context.fillStyle = '#000'; context.fillRect(5 + eyeOffset, 5, 6, 1); context.fillRect(12 + eyeOffset, 5, 6, 1); }
+        context.fillStyle = '#000'; context.fillRect(9, 15, 6, 2);
+      }
+
+      // Головные уборы (рисуются так же)
+      if (hType === 'cap') {
+        context.fillStyle = hColor; context.fillRect(3, 1, 18, 5); context.fillRect(15, 3, 8, 3);
+        context.fillStyle = '#ffd700'; context.fillRect(7, 2, 3, 2); context.fillRect(12, 2, 3, 2);
+      } else if (hType === 'straw') {
+        context.fillStyle = hColor; context.fillRect(-2, 2, 28, 4); context.fillRect(5, -3, 14, 6);
+        context.fillStyle = '#ff0000'; context.fillRect(5, 1, 14, 2);
+      } else if (hType === 'mask') {
+        context.fillStyle = hColor; 
+        context.beginPath();
+        context.moveTo(2, 4); context.lineTo(22, 4);
+        context.lineTo(20, 20); context.lineTo(18, 22); context.lineTo(6, 22); context.lineTo(4, 20);
+        context.closePath(); context.fill();
+
+        context.fillStyle = '#ff0000';
+        context.beginPath();
+        context.moveTo(12, 4); context.quadraticCurveTo(10, 10, 12, 16); context.quadraticCurveTo(14, 10, 12, 4); context.fill();
+        context.beginPath(); context.moveTo(6, 6); context.lineTo(10, 12); context.lineTo(8, 14); context.lineTo(4, 8); context.fill();
+        context.beginPath(); context.moveTo(18, 6); context.lineTo(14, 12); context.lineTo(16, 14); context.lineTo(20, 8); context.fill();
+
+        if (state.isBlinking) {
+          context.fillStyle = '#000000'; context.fillRect(4, 9, 6, 5); context.fillRect(15, 9, 6, 5);
+        } else {
+          context.fillStyle = '#000000'; 
+          context.beginPath(); context.moveTo(4, 10); context.lineTo(9, 10); context.lineTo(7, 13); context.closePath(); context.fill();
+          context.beginPath(); context.moveTo(20, 10); context.lineTo(15, 10); context.lineTo(17, 13); context.closePath(); context.fill();
+        }
+
+        context.fillStyle = '#ffffff'; context.fillRect(4, 16, 16, 5);
+        context.fillStyle = '#000000'; 
+        for(let i=4; i<20; i+=3) { context.fillRect(i, 16, 1, 5); }
+      }
+      context.restore();
+
+      // Ник
+      if (p.nick) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(sx - p.w/2 - 10, sy - p.h - 15, p.w + 20, 16);
+        ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(p.nick, sx, sy - p.h - 3); ctx.textAlign = 'left';
       }
     }
 
@@ -502,7 +595,6 @@
       const dx = DISCO_X - camX;
       if (dx < -300 || dx > canvas.width + 300) return;
 
-      // Перекрашиваем квадратики пола
       const tile = 40;
       const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile;
       const endX = startX + DISCO_WIDTH + tile;
@@ -510,13 +602,11 @@
       for (let x = startX; x < endX; x += tile) {
         const sx = x - camX;
         if (sx < -tile || sx > canvas.width + tile) continue;
-        
         const hue = (state.time * 50 + x) % 360;
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
         ctx.fillRect(sx, floorY, tile, canvas.height - floorY);
       }
 
-      // Шар и свет
       const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
       ctx.fillStyle = '#888';
       ctx.fillRect(dx - 2, 0, 4, ballY); 
@@ -566,13 +656,7 @@
 
     function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
       const px = isPreview ? 0 : p.x - camX;
-      
-      let sitOffset = 0;
-      if (p.isSitting && !isPreview) {
-        sitOffset = 15; 
-      }
-
-      const py = isPreview ? 0 : baseFloorY + p.y + sitOffset; 
+      const py = isPreview ? 0 : baseFloorY + p.y; 
       
       context.save();
       if (!isPreview) {
@@ -582,8 +666,6 @@
         
         if (p.isDancing) {
            context.translate(0, Math.sin(state.time * 0.5) * 5);
-        } else if (p.isSitting) {
-           context.translate(0, Math.sin(state.time * 0.1) * 1.0);
         } else if (p.vx === 0 && p.onGround) {
            context.translate(0, Math.sin(state.time * 0.1) * 1.5);
         }
@@ -599,11 +681,7 @@
       const isFemale = p.gender === 'female';
 
       context.fillStyle = cPants;
-      if (p.isSitting && !isPreview) {
-         context.fillRect(5, 35, 6, 10); 
-         context.fillRect(13, 35, 6, 10);
-         context.fillRect(5, 45, 12, 6); 
-      } else if (p.vx !== 0 && p.onGround && !isPreview) {
+      if (p.vx !== 0 && p.onGround && !isPreview) {
         const walk = Math.sin(state.time * 0.5) * 3;
         context.fillRect(5, 42 + walk, 6, 18);
         context.fillRect(13, 42 - walk, 6, 18);
@@ -612,12 +690,7 @@
       }
 
       context.fillStyle = cShirt; 
-      if (p.isSitting && !isPreview) {
-        context.fillRect(4, 20, 16, 16);
-      } else {
-        context.fillRect(4, 24, 16, 18);
-      }
-      
+      context.fillRect(4, 24, 16, 18);
       context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 24, 10, 2);
 
       context.fillStyle = cSkin; 
@@ -718,7 +791,7 @@
       }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
 
-      // Перекрашиваем пол под дискотеку ДО отрисовки мебели и персонажей
+      // Пол дискотеки
       const discoStartX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile;
       const discoEndX = discoStartX + DISCO_WIDTH + tile;
       for (let x = discoStartX; x < discoEndX; x += tile) {
@@ -734,7 +807,6 @@
       
       const dx = DISCO_X - camX;
       if (dx > -300 && dx < w + 300) {
-         // Шар и лучи (рисуем поверх пола, но под персонажами)
          const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10;
          ctx.fillStyle = '#888';
          ctx.fillRect(dx - 2, 0, 4, ballY); 
@@ -833,8 +905,23 @@
         }
       }
 
-      for (let id in state.otherPlayers) drawCharacter(state.otherPlayers[id], camX, floorY);
-      drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
+      // Отрисовка игроков
+      for (let id in state.otherPlayers) {
+        const p = state.otherPlayers[id];
+        if (p.isSitting) {
+           drawSittingCharacter(p, camX, floorY);
+        } else {
+           drawCharacter(p, camX, floorY);
+        }
+      }
+      
+      // Отрисовка своего игрока
+      if (state.player.isSitting) {
+          // Если сидим - обычную модельку не рисуем, рисуем только сидячую "копию"
+          drawSittingCharacter({ ...state.player, nick: state.nick }, camX, floorY);
+      } else {
+          drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
+      }
     }
 
     let lastTime = 0;
@@ -921,4 +1008,4 @@
     }
   </script>
 </body>
-  </html>
+        </html>
