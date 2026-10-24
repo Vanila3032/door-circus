@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Door Circus - Wardrobe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
+    
+    #wardrobeScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, #2a1040 0%, #0a0a12 80%); overflow: hidden; display: flex; flex-direction: column; }
+
+    .preview-area { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
+    #previewCanvas { max-height: 70vh; width: auto; object-fit: contain; margin-top: -50px; }
+
+    #toast { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 10px 20px; border-radius: 20px; font-weight: bold; border: 1px solid #ff6ad5; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; text-align: center; width: 80%; }
+    #toast.show { opacity: 1; }
+
+    .color-palette { position: absolute; top: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 5; height: 40px; pointer-events: auto; flex-wrap: wrap;}
+    .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 16px;}
+    .color-btn.active { transform: scale(1.2); border-color: #ff6ad5; box-shadow: 0 0 15px #ff6ad5; }
+
+    .sidebar { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 10; pointer-events: auto; overflow-y: auto; max-height: 80vh; }
+    .cat-btn { width: 50px; height: 50px; border-radius: 12px; background: rgba(10, 5, 18, 0.8); border: 2px solid #4a3a70; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; backdrop-filter: blur(5px); flex-shrink: 0;}
+    .cat-btn.active { background: rgba(122, 60, 255, 0.9); border-color: #ff6ad5; box-shadow: 0 0 15px rgba(255, 106, 213, 0.5); }
+
+    .options-panel { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 10, 25, 0.95); backdrop-filter: blur(10px); border-top: 2px solid #4a3a70; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20; max-height: 50%; pointer-events: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+    .options-panel.open { transform: translateY(0); }
+    
+    .panel-header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2040; }
+    .panel-title { font-weight: bold; color: #ff6ad5; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    .close-panel { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; padding: 5px; }
+    
+    .panel-content { padding: 15px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .opt-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; flex: 1; min-width: 120px; max-width: 200px; text-align: center; position: relative; }
+    .opt-btn:hover { background: rgba(122, 60, 255, 0.3); }
+    .opt-btn.active { background: #7a3cff; border-color: #ff6ad5; }
+    
+    .opt-btn.premium { border-color: #ffd700; }
+    .opt-btn.premium::before { content: '⭐'; position: absolute; top: -8px; right: -8px; font-size: 16px; filter: drop-shadow(0 0 5px #ffd700); }
+
+    .bottom-actions { position: absolute; bottom: 20px; left: 80px; right: 20px; display: flex; gap: 15px; z-index: 15; pointer-events: auto; }
+    .action-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    #wearBtn { background: #3cff9c; color: #000; box-shadow: 0 0 20px rgba(60, 255, 156, 0.4); }
+    #closeWardrobeBtn { background: rgba(255, 85, 102, 0.9); color: #fff; }
+  </style>
+</head>
+<body>
+
+  <div id="toast">Текст</div>
+
+  <div id="wardrobeScreen">
+    <div class="preview-area">
+      <canvas id="previewCanvas" width="400" height="600"></canvas>
+    </div>
+
+    <div class="color-palette" id="colorPalette"></div>
+
+    <div class="sidebar">
+      <button class="cat-btn active" data-category="body">🧑</button>
+      <button class="cat-btn" data-category="hair">💇</button>
+      <button class="cat-btn" data-category="eyes">👁️</button>
+      <button class="cat-btn" data-category="top">👕</button>
+      <button class="cat-btn" data-category="bottom">👖</button>
+      <button class="cat-btn" data-category="shoes">👟</button>
+      <button class="cat-btn" data-category="hat">🧢</button>
+      <button class="cat-btn" data-category="pet">🐾</button>
+    </div>
+
+    <div class="options-panel" id="optionsPanel">
+      <div class="panel-header">
+        <div class="panel-title" id="panelTitle">Тело</div>
+        <button class="close-panel" id="closePanelBtn">✖</button>
+      </div>
+      <div class="panel-content" id="panelContent"></div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="action-btn" id="closeWardrobeBtn">Отмена</button>
+      <button class="action-btn" id="wearBtn">Надеть</button>
+    </div>
+  </div>
+
+  <!-- Подключаем наш скрипт -->
+  <script src="wardrobe.js"></script>
+</body>
+  </html>
