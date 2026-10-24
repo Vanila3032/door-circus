@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Door Circus - Halloween</title>
+  <title>Door Circus - Lobby</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
@@ -34,8 +34,9 @@
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     
-    #interactBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
-    #interactBtn.show { display: block; animation: pulse 1.5s infinite; }
+    /* Кнопка Гардероба (справа сверху) */
+    #wardrobeBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); display: none; }
+    #wardrobeBtn.show { display: block; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     #controls { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 10; }
@@ -63,10 +64,8 @@
 </head>
 <body>
 
-  <!-- Музыка временно убрана (будет в папке audio) -->
-  <!-- <audio id="bgMusic" loop><source src="audio/bg.mp3" type="audio/mpeg"></audio> -->
-  <!-- <audio id="discoMusic" loop><source src="audio/disco.mp3" type="audio/mpeg"></audio> -->
-
+  <!-- Музыка временно убрана -->
+  
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
@@ -94,7 +93,7 @@
       </div>
     </div>
     
-    <button id="interactBtn">Действие</button>
+    <button id="wardrobeBtn">👗 Гардероб</button>
 
     <div id="controls">
       <div class="move-btns">
@@ -122,21 +121,8 @@
     const DISCO_X = 3700; 
     const DISCO_WIDTH = 200; 
 
-    const SEATS = [
-      { id: 'sofa1', x: 1400, w: 100, color: '#5a1a1a', type: 'sofa' },
-      { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' }
-    ];
-    
+    const SEATS = [ { id: 'sofa1', x: 1400, w: 100, color: '#5a1a1a', type: 'sofa' }, { id: 'sofa2', x: 1950, w: 100, color: '#1a1a5a', type: 'sofa' } ];
     const PLANTS = [ { x: 1250 }, { x: 1550 }, { x: 2100 }, { x: 2350 } ];
-
-    const COLORS = {
-      skin:  ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac', '#d4af37', '#a0522d'],
-      hair:  ['#3a2050', '#000000', '#8b4513', '#ffd700', '#ff0000', '#ffffff', '#0000ff'],
-      eyes:  ['#000000', '#0000ff', '#008000', '#8b4513', '#800080'],
-      shirt: ['#ff6ad5', '#7a3cff', '#3cff9c', '#ffaa3c', '#ff3c5c', '#ffffff', '#1a1a1a', '#008080'],
-      pants: ['#1a1a1a', '#4a3a70', '#2a1040', '#006400', '#8b4513', '#000080', '#808080'],
-      hat:   ['#1a1a1a', '#ffffff', '#d4af37', '#ff6ad5', '#7a3cff', '#8b4513', '#ff0000']
-    };
 
     const state = {
       loggedIn: false, nick: '', myId: null,
@@ -145,7 +131,7 @@
     };
 
     const $ = (id) => document.getElementById(id);
-    const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn'), toast = $('toast');
+    const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), wardrobeBtn = $('wardrobeBtn'), toast = $('toast');
     let ws = null;
 
     function connectToServer() {
@@ -180,11 +166,11 @@
 
     logoutBtn.addEventListener('click', () => { if (ws) ws.close(); state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
     
-    interactBtn.addEventListener('click', () => {
-      if (state.nearInteract === 'wardrobe') {
-          window.location.href = '/wardrobe.html?nick=' + state.nick;
-      }
+    // Кнопка перехода в гардероб
+    wardrobeBtn.addEventListener('click', () => {
+        window.location.href = '/wardrobe.html?nick=' + state.nick;
     });
+
     function showToast(text) { toast.textContent = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
 
     let lastSentX = 0, sendTimer = 0;
@@ -209,15 +195,15 @@
       sendTimer += dt * 16.67;
       if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0; }
       
-      const px = p.x + p.w/2; state.nearInteract = null;
+      const px = p.x + p.w/2;
       
+      // Показываем кнопку гардероба, если мы возле шкафа
       if (Math.abs(px - WARDROBE_X) < 60) { 
-        state.nearInteract = 'wardrobe'; 
-        interactBtn.textContent = '👗 Гардероб'; 
-        interactBtn.classList.add('show'); 
+        wardrobeBtn.classList.add('show'); 
       } else {
-        interactBtn.classList.remove('show');
+        wardrobeBtn.classList.remove('show');
       }
+      
       state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
     }
 
@@ -230,7 +216,6 @@
       const dx = DISCO_X - camX; if (dx < -300 || dx > canvas.width + 300) return;
       const tile = 40; const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile; const endX = startX + DISCO_WIDTH + tile;
       
-      // Танцпол
       for (let x = startX; x < endX; x += tile) { 
         const sx = x - camX; 
         if (sx < -tile || sx > canvas.width + tile) continue; 
@@ -239,18 +224,13 @@
         ctx.fillRect(sx, floorY, tile, canvas.height - floorY); 
       }
 
-      // Колонки
       const speakerY = floorY - 60;
       ctx.fillStyle = '#222';
-      // Левая колонка
       ctx.fillRect(dx - 120, speakerY, 30, 60);
       ctx.fillStyle = '#444'; ctx.fillRect(dx - 115, speakerY + 10, 20, 15); ctx.fillRect(dx - 115, speakerY + 35, 20, 15);
-      // Правая колонка
-      ctx.fillStyle = '#222';
-      ctx.fillRect(dx + 90, speakerY, 30, 60);
+      ctx.fillStyle = '#222'; ctx.fillRect(dx + 90, speakerY, 30, 60);
       ctx.fillStyle = '#444'; ctx.fillRect(dx + 95, speakerY + 10, 20, 15); ctx.fillRect(dx + 95, speakerY + 35, 20, 15);
 
-      // Диско-шар
       const ballY = floorY - 280 + Math.sin(state.time * 0.05) * 10; 
       ctx.fillStyle = '#888'; ctx.fillRect(dx - 2, 0, 4, ballY); 
       
@@ -266,80 +246,71 @@
       ctx.restore();
     }
 
-    function drawCharacter(p, camX, baseFloorY, isPreview = false, context = ctx) {
-      const px = isPreview ? 0 : p.x - camX; const py = isPreview ? 0 : baseFloorY + p.y; 
-      context.save();
-      if (!isPreview) {
-        context.fillStyle = 'rgba(0,0,0,0.4)'; context.beginPath(); context.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); context.fill();
-        context.translate(px, py);
-        if (p.isDancing) { context.translate(0, Math.sin(state.time * 0.5) * 5); } else if (p.vx === 0 && p.onGround) { context.translate(0, Math.sin(state.time * 0.1) * 1.5); }
-      } else { context.translate(150 - (p.w * 1.6)/2, 200 - (p.h * 1.6)/2); }
-      context.scale(1.6, 1.6);
-      const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cEyes = p.colorEyes || '#000000', cShirt = p.colorShirt || '#7a3cff', cPants = p.colorPants || '#1a1a1a', hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a', isFemale = p.gender === 'female';
-      context.fillStyle = cPants;
-      if (p.vx !== 0 && p.onGround && !isPreview) { const walk = Math.sin(state.time * 0.5) * 3; context.fillRect(5, 42 + walk, 6, 18); context.fillRect(13, 42 - walk, 6, 18); } else { context.fillRect(5, 42, 6, 18); context.fillRect(13, 42, 6, 18); }
-      context.fillStyle = cShirt; context.fillRect(4, 24, 16, 18); context.fillStyle = 'rgba(0,0,0,0.2)'; context.fillRect(7, 24, 10, 2);
-      context.fillStyle = cSkin; if (p.isDancing && !isPreview) { context.fillRect(0, 10 + Math.sin(state.time*0.5)*5, 4, 16); context.fillRect(20, 10 + Math.cos(state.time*0.5)*5, 4, 16); } else { context.fillRect(0, 24, 4, 16); context.fillRect(20, 24, 4, 16); }
-      context.fillStyle = cSkin; context.fillRect(3, 0, 18, 20);
-      context.fillStyle = cHair; if (isFemale) { context.fillRect(2, 0, 20, 8); context.fillRect(1, 8, 4, 14); context.fillRect(19, 8, 4, 14); } else { context.fillRect(3, 0, 18, 6); }
-      context.fillStyle = cSkin; context.fillRect(1, 8, 2, 4); context.fillRect(21, 8, 2, 4);
-      if (hType !== 'mask') {
-        const eyeOffset = p.facing === 1 ? 2 : 0; 
-        if (state.isBlinking && !isPreview) { context.fillStyle = cSkin; context.fillRect(6 + eyeOffset, 6, 5, 6); context.fillRect(13 + eyeOffset, 6, 5, 6); context.fillStyle = '#000'; context.fillRect(6 + eyeOffset, 8, 5, 1); context.fillRect(13 + eyeOffset, 8, 5, 1); } 
-        else { context.fillStyle = '#fff'; context.fillRect(6 + eyeOffset, 6, 5, 6); context.fillRect(13 + eyeOffset, 6, 5, 6); context.fillStyle = cEyes; context.fillRect(8 + eyeOffset, 8, 2, 3); context.fillRect(15 + eyeOffset, 8, 2, 3); }
-        if (isFemale) { context.fillStyle = '#000'; context.fillRect(5 + eyeOffset, 5, 6, 1); context.fillRect(12 + eyeOffset, 5, 6, 1); }
-        context.fillStyle = '#000'; context.fillRect(9, 15, 6, 2);
+    function drawCharacter(p, camX, baseFloorY) {
+      const px = p.x - camX; const py = baseFloorY + p.y; 
+      ctx.save();
+      
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
+      ctx.translate(px, py);
+      if (p.isDancing) { ctx.translate(0, Math.sin(state.time * 0.5) * 5); } else if (p.vx === 0 && p.onGround) { ctx.translate(0, Math.sin(state.time * 0.1) * 1.5); }
+      
+      ctx.scale(1.6, 1.6);
+      
+      // Упрощенная отрисовка (только базовые вещи для лобби)
+      const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cShirt = p.colorShirt || '#7a3cff', cPants = p.colorPants || '#1a1a1a', isFemale = p.gender === 'female';
+
+      ctx.fillStyle = cPants;
+      if (p.vx !== 0 && p.onGround) { const walk = Math.sin(state.time * 0.5) * 3; ctx.fillRect(5, 42 + walk, 6, 18); ctx.fillRect(13, 42 - walk, 6, 18); } else { ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18); }
+      
+      ctx.fillStyle = cShirt; ctx.fillRect(4, 24, 16, 18);
+      ctx.fillStyle = cSkin; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16);
+      ctx.fillStyle = cSkin; ctx.fillRect(3, 0, 18, 20);
+      
+      ctx.fillStyle = cHair; 
+      if (isFemale) { ctx.fillRect(2, 0, 20, 8); ctx.fillRect(1, 8, 4, 14); ctx.fillRect(19, 8, 4, 14); } 
+      else { ctx.fillRect(3, 0, 18, 6); }
+      
+      ctx.fillStyle = '#fff'; ctx.fillRect(6, 6, 5, 6); ctx.fillRect(13, 6, 5, 6);
+      ctx.fillStyle = '#000'; ctx.fillRect(8, 8, 2, 3); ctx.fillRect(15, 8, 2, 3);
+      ctx.fillStyle = '#000'; ctx.fillRect(9, 15, 6, 2);
+
+      // Рисуем простую шляпу, если надета
+      if (p.hatType === 'cap') { 
+        ctx.fillStyle = p.hatColor; ctx.fillRect(3, 1, 18, 5); ctx.fillRect(15, 3, 8, 3); 
       }
-      if (hType === 'cap') { context.fillStyle = hColor; context.fillRect(3, 1, 18, 5); context.fillRect(15, 3, 8, 3); context.fillStyle = '#ffd700'; context.fillRect(7, 2, 3, 2); context.fillRect(12, 2, 3, 2); } 
-      else if (hType === 'straw') { context.fillStyle = hColor; context.fillRect(-2, 2, 28, 4); context.fillRect(5, -3, 14, 6); context.fillStyle = '#ff0000'; context.fillRect(5, 1, 14, 2); } 
-      else if (hType === 'mask') {
-        context.fillStyle = hColor; context.beginPath(); context.moveTo(2, 4); context.lineTo(22, 4); context.lineTo(20, 20); context.lineTo(18, 22); context.lineTo(6, 22); context.lineTo(4, 20); context.closePath(); context.fill();
-        context.fillStyle = '#ff0000'; context.beginPath(); context.moveTo(12, 4); context.quadraticCurveTo(10, 10, 12, 16); context.quadraticCurveTo(14, 10, 12, 4); context.fill();
-        context.beginPath(); context.moveTo(6, 6); context.lineTo(10, 12); context.lineTo(8, 14); context.lineTo(4, 8); context.fill();
-        context.beginPath(); context.moveTo(18, 6); context.lineTo(14, 12); context.lineTo(16, 14); context.lineTo(20, 8); context.fill();
-        if (state.isBlinking && !isPreview) { context.fillStyle = '#000000'; context.fillRect(4, 9, 6, 5); context.fillRect(15, 9, 6, 5); } 
-        else { context.fillStyle = '#000000'; context.beginPath(); context.moveTo(4, 10); context.lineTo(9, 10); context.lineTo(7, 13); context.closePath(); context.fill(); context.beginPath(); context.moveTo(20, 10); context.lineTo(15, 10); context.lineTo(17, 13); context.closePath(); context.fill(); }
-        context.fillStyle = '#ffffff'; context.fillRect(4, 16, 16, 5); context.fillStyle = '#000000'; for(let i=4; i<20; i+=3) { context.fillRect(i, 16, 1, 5); }
-      }
-      context.restore();
-      if (!isPreview && p.nick) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16); ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left'; }
+
+      ctx.restore();
+      
+      if (p.nick) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16); ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left'; }
     }
 
     function draw() {
       const w = canvas.width, h = canvas.height; const camX = Math.floor(state.camera.x); state.groundY = h - 80; 
       BAR_TABLE.y = state.groundY - BAR_TABLE.h; 
       const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1a0a2e'); bg.addColorStop(0.7, '#2a1040'); bg.addColorStop(1, '#0a0512'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = 'rgba(122, 60, 255, 0.15)'; ctx.lineWidth = 15; for (let x = Math.floor(camX / 600) * 600; x < camX + w + 600; x += 600) { ctx.beginPath(); ctx.arc(x - camX + 300, state.groundY - 150, 250, Math.PI, 0); ctx.stroke(); }
-      const floorY = state.groundY, tile = 40; for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
-      ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
+      
+      const floorY = state.groundY, tile = 40; 
+      for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
       
       drawFurniture(camX, floorY);
       drawDisco(camX, floorY);
       
+      // Бар
       const bx = BAR_X - camX;
       if (bx > -200 && bx < w + 200) {
-        const npcBob = Math.sin(state.time * 0.3) * 3; ctx.save(); ctx.translate(bx, BAR_TABLE.y - 50 + npcBob); ctx.scale(1.6, 1.6);
-        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18); ctx.fillStyle = '#000000'; ctx.fillRect(4, 24, 16, 18); ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 24, 8, 12); ctx.fillStyle = '#000000'; ctx.fillRect(11, 24, 2, 10);
-        ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); ctx.fillRect(3, 0, 18, 20);
-        ctx.fillStyle = '#3a2050'; ctx.fillRect(3, 0, 18, 6); ctx.fillStyle = '#fff'; ctx.fillRect(6, 6, 5, 6); ctx.fillRect(13, 6, 5, 6); ctx.fillStyle = '#000'; ctx.fillRect(8, 8, 2, 3); ctx.fillRect(15, 8, 2, 3); ctx.fillRect(6, 14, 8, 2); ctx.fillRect(5, 13, 2, 2); ctx.fillRect(13, 13, 2, 2); ctx.restore();
         const tableTop = BAR_TABLE.y; const tableBottom = state.groundY + 50; const tableHeight = tableBottom - tableTop;
-        ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 50, tableTop, 150, tableHeight); ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 55, tableTop - 5, 160, 10); 
-        ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 100, 5); ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20); ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
+        ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 50, tableTop, 150, tableHeight); 
+        ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 55, tableTop - 5, 160, 10); 
       }
+      
+      // Шкаф
       const wx = WARDROBE_X - camX;
       if (wx > -100 && wx < w + 100) {
-        ctx.fillStyle = '#0a0512'; ctx.fillRect(wx - 40, floorY - 150, 80, 150); ctx.fillStyle = '#05020a'; ctx.fillRect(wx - 35, floorY - 145, 70, 145); ctx.fillStyle = '#c19a6b'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); 
-        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(wx + 5, floorY - 75, 5, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#7a3cff'; ctx.beginPath(); ctx.moveTo(wx - 35, floorY - 145); ctx.lineTo(wx + 15, floorY - 145); ctx.lineTo(wx + 5, floorY - 110); ctx.lineTo(wx - 25, floorY - 120); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#0a0512'; ctx.fillRect(wx - 40, floorY - 150, 80, 150); 
+        ctx.fillStyle = '#05020a'; ctx.fillRect(wx - 35, floorY - 145, 70, 145); 
       }
-      for (const d of DOORS) {
-        const dx = d.x - camX; if (dx < -100 || dx > w + 100) continue; const dh = 120, dw = 70, dy = floorY - dh, dxPos = dx - dw/2;
-        ctx.fillStyle = '#0a0512'; ctx.fillRect(dxPos - 4, dy - 4, dw + 8, dh + 8); ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
-        ctx.fillStyle = '#4a3020'; ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore(); ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
-        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(dxPos - 15, dy - 40, dw + 30, 20); ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЗАКРЫТО', dx, dy - 25); ctx.textAlign = 'left';
-      }
-      drawPumpkin(WARDROBE_X - camX + 50, floorY - 15, 1); for (const d of DOORS) { const dx = d.x - camX; if (dx > -100 && dx < w + 100) { drawPumpkin(dx - 50, floorY - 15, 1); } }
-      for (let id in state.otherPlayers) { const p = state.otherPlayers[id]; drawCharacter(p, camX, floorY); }
+
+      for (let id in state.otherPlayers) { drawCharacter(state.otherPlayers[id], camX, floorY); }
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
 
