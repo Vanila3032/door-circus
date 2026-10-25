@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Door Circus - v1.1.1</title>
+  <title>Door Circus - v1.1.2</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
@@ -55,7 +55,7 @@
 <body>
   <div id="loginScreen" class="screen active">
     <div class="login-box">
-      <div class="version-tag">v1.1.1</div>
+      <div class="version-tag">v1.1.2</div>
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
       <p class="subtitle">Войди в цирк дверей</p>
       <div class="input-frame">
@@ -118,6 +118,7 @@
     const $ = (id) => document.getElementById(id);
     const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn');
     
+    // Отключаем сглаживание, чтобы не было размытия
     ctx.imageSmoothingEnabled = false;
     
     let ws = null;
@@ -228,28 +229,33 @@
       
       const tableTop = floorY - BAR_TABLE.h;
       
+      // Усатый бармен
       const npcBob = Math.sin(state.time * 0.08) * 2;
       ctx.save();
       ctx.translate(bx, tableTop + 15 + npcBob); 
       ctx.scale(2, 2);
       
-      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-8, -18, 16, 18);
-      ctx.fillStyle = '#fff'; ctx.fillRect(-4, -18, 8, 12);
-      ctx.fillStyle = '#000'; ctx.fillRect(-1, -16, 2, 6);
-      ctx.fillStyle = '#f1c27d'; ctx.fillRect(-9, -14, 3, 14); ctx.fillRect(6, -14, 3, 14);
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-8, -18, 16, 18); // Смокинг
+      ctx.fillStyle = '#fff'; ctx.fillRect(-4, -18, 8, 12); // Рубашка
+      ctx.fillStyle = '#000'; ctx.fillRect(-1, -16, 2, 6); // Галстук
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(-9, -14, 3, 14); ctx.fillRect(6, -14, 3, 14); // Руки
+      
+      // Голова
       ctx.fillStyle = '#f1c27d'; ctx.fillRect(-7, -34, 14, 16); 
-      ctx.fillStyle = '#333'; ctx.fillRect(-7, -34, 14, 4);
-      ctx.fillStyle = '#333'; ctx.fillRect(-5, -26, 10, 2);
+      ctx.fillStyle = '#333'; ctx.fillRect(-7, -34, 14, 4); // Волосы
+      ctx.fillStyle = '#333'; ctx.fillRect(-5, -26, 10, 2); // Усы
       ctx.fillStyle = '#fff'; ctx.fillRect(-5, -31, 4, 4); ctx.fillRect(1, -31, 4, 4);
       ctx.fillStyle = '#000'; ctx.fillRect(-4, -30, 2, 2); ctx.fillRect(2, -30, 2, 2);
       
       ctx.restore();
 
+      // Стойка
       ctx.fillStyle = '#3e2723'; 
       ctx.fillRect(bx - BAR_TABLE.w/2, tableTop, BAR_TABLE.w, BAR_TABLE.h); 
       ctx.fillStyle = '#5d4037'; 
       ctx.fillRect(bx - BAR_TABLE.w/2 - 5, tableTop - 5, BAR_TABLE.w + 10, 10); 
       
+      // Бокалы
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; 
       ctx.fillRect(bx - 30, tableTop - 20, 10, 15); 
       ctx.fillRect(bx + 20, tableTop - 20, 10, 15); 
