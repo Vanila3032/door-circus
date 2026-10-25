@@ -3,32 +3,37 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 
-// Папка для сохранений
-const DATA_FILE = path.join(__dirname, 'players.json');
-let savedPlayers = {};
-
-// Загружаем базу при старте
-if (fs.existsSync(DATA_FILE)) {
-    try {
-        savedPlayers = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    } catch (e) {
-        console.log("Ошибка чтения файла сохранений, создаем новый.");
-    }
-}
-
-// Функция сохранения базы
-function saveDatabase() {
-    fs.writeFile(DATA_FILE, JSON.stringify(savedPlayers, null, 2), (err) => {
-        if (err) console.error("Ошибка сохранения базы:", err);
-    });
-}
+const SUPABASE_URL = 'https://hyutxzmomdppfiztwajl.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_secret_XIM-_dWp5LWadVvYNgRQmQ_-HEYiZv1';
 
 const server = http.createServer((req, res) => {
+    if (req.method === 'POST' && req.url === '/saveSkin') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
+                await fetchSupabase(`players?nick=eq.${data.nick.toLowerCase()}`, 'PATCH', { 
+                    appearance: data.appearance 
+                });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(500);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // ЛОГИКА РАЗДАЧИ ФАЙЛОВ
     const urlPath = req.url.split('?')[0];
+    // Если запрос на корень, отдаем index.html
     let filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
     
     const extname = path.extname(filePath);
-    let contentType = 'text/html';
+    let contentType = 'text/html'; // По умолчанию считаем, что это HTML
+    
     if (extname === '.js') contentType = 'text/javascript';
     else if (extname === '.css') contentType = 'text/css';
     else if (extname === '.png') contentType = 'image/png';
@@ -39,6 +44,7 @@ const server = http.createServer((req, res) => {
             res.writeHead(404); 
             res.end('File not found'); 
         } else { 
+            // ВАЖНО: text/html заставит браузер отрисовать страницу
             res.writeHead(200, { 'Content-Type': contentType }); 
             res.end(content, 'utf-8'); 
         }
@@ -46,48 +52,56 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocket.Server({ server });
-let players = {}; // Активные игроки в сети
+let players = {};
+
+async function fetchSupabase(endpoint, method = 'GET', body = null) {
+    const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    };
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
+    if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+    return res.status === 204 ? null : await res.json();
+}
 
 wss.on('connection', (ws) => {
     let id = null;
     let currentNick = null;
 
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
 
             if (data.type === 'join') {
                 currentNick = data.nick.toLowerCase();
+                const users = await fetchSupabase(`players?nick=eq.${currentNick}`);
                 
-                // ПРОВЕРКА ПАРОЛЯ
-                if (savedPlayers[currentNick]) {
-                    if (savedPlayers[currentNick].password !== data.password) {
+                if (users.length > 0) {
+                    if (users[0].password !== data.password) {
                         ws.send(JSON.stringify({ type: 'authError', message: 'Неверный пароль!' }));
                         return;
                     }
                 } else {
-                    // Создаем нового игрока
-                    savedPlayers[currentNick] = {
-                        password: data.password,
-                        appearance: data.appearance,
-                        x: 500, y: 0, // Стартовая позиция
-                        facing: 1
+                    const newPlayer = {
+                        nick: currentNick, password: data.password,
+                        appearance: data.appearance, x: 500, y: 0, facing: 1, coins: 0
                     };
-                    saveDatabase();
+                    await fetchSupabase('players', 'POST', newPlayer);
+                    users.push(newPlayer);
                 }
 
+                const saved = users[0];
                 id = Math.random().toString(36).substr(2, 9);
-                const saved = savedPlayers[currentNick];
-
-                // Отправляем игроку его сохраненные данные
+                
                 players[id] = { 
-                    id: id, 
-                    nick: data.nick, 
-                    x: saved.x, 
-                    y: saved.y, 
-                    facing: saved.facing, 
-                    appearance: saved.appearance,
-                    isSitting: false
+                    id: id, nick: data.nick, x: saved.x, y: saved.y, 
+                    facing: saved.facing, appearance: saved.appearance, 
+                    isSitting: false, coins: saved.coins 
                 };
                 
                 ws.send(JSON.stringify({ type: 'authSuccess', player: players[id], others: Object.values(players).filter(p => p.id !== id) }));
@@ -95,46 +109,29 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'move' && id && players[id]) {
-                players[id].x = data.x; 
-                players[id].y = data.y; 
-                players[id].facing = data.facing;
-                players[id].isSitting = data.isSitting;
-                
-                // Обновляем позицию в базе
-                if (savedPlayers[currentNick]) {
-                    savedPlayers[currentNick].x = data.x;
-                    savedPlayers[currentNick].y = data.y;
-                    savedPlayers[currentNick].facing = data.facing;
-                }
-                
+                players[id].x = data.x; players[id].y = data.y; players[id].facing = data.facing;
+                fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { x: data.x, y: data.y, facing: data.facing }).catch(e => console.log(e));
                 broadcast({ type: 'playerMoved', id: id, x: data.x, y: data.y, facing: data.facing, isSitting: data.isSitting }, ws);
             }
 
             if (data.type === 'updateAppearance' && id && players[id]) {
                 players[id].appearance = data.appearance;
-                if (savedPlayers[currentNick]) {
-                    savedPlayers[currentNick].appearance = data.appearance;
-                    saveDatabase(); // Сохраняем скин
-                }
+                fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { appearance: data.appearance }).catch(e => console.log(e));
                 broadcast({ type: 'appearanceChanged', id: id, appearance: data.appearance }, ws);
             }
 
             if (data.type === 'chat' && id && players[id]) {
                 broadcast({ type: 'chat', nick: players[id].nick, text: data.text }, null);
             }
-        } catch (e) {
-            console.error('Ошибка:', e);
-        }
+        } catch (e) { console.error('Ошибка:', e); }
     });
 
     ws.on('close', () => {
         if (id && players[id]) {
-            // Сохраняем позицию перед выходом
-            if (savedPlayers[currentNick]) {
-                savedPlayers[currentNick].x = players[id].x;
-                savedPlayers[currentNick].y = players[id].y;
-                savedPlayers[currentNick].facing = players[id].facing;
-                saveDatabase();
+            if (currentNick) {
+                fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { 
+                    x: players[id].x, y: players[id].y, facing: players[id].facing 
+                }).catch(e => console.log(e));
             }
             broadcast({ type: 'playerLeft', id: id }, null);
             delete players[id];
@@ -145,16 +142,9 @@ wss.on('connection', (ws) => {
 function broadcast(data, excludeWs) {
     const msg = JSON.stringify(data);
     wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN && client !== excludeWs) {
-            client.send(msg);
-        }
+        if (client.readyState === WebSocket.OPEN && client !== excludeWs) client.send(msg);
     });
 }
 
-// Автосохранение раз в 10 секунд
-setInterval(saveDatabase, 10000);
-
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server started on port ${PORT}!`);
-});
+server.listen(PORT, '0.0.0.0', () => { console.log(`Server started on port ${PORT}!`); });
