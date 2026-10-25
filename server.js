@@ -7,6 +7,7 @@ const SUPABASE_URL = 'https://hyutxzmomdppfiztwajl.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_secret_XIM-_dWp5LWadVvYNgRQmQ_-HEYiZv1';
 
 const server = http.createServer((req, res) => {
+    // Обработка сохранения скина напрямую
     if (req.method === 'POST' && req.url === '/saveSkin') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
@@ -28,26 +29,18 @@ const server = http.createServer((req, res) => {
 
     // ЛОГИКА РАЗДАЧИ ФАЙЛОВ
     const urlPath = req.url.split('?')[0];
-    // Если запрос на корень, отдаем index.html
     let filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
     
     const extname = path.extname(filePath);
-    let contentType = 'text/html'; // По умолчанию считаем, что это HTML
-    
+    let contentType = 'text/html';
     if (extname === '.js') contentType = 'text/javascript';
     else if (extname === '.css') contentType = 'text/css';
     else if (extname === '.png') contentType = 'image/png';
     else if (extname === '.jpg') contentType = 'image/jpeg';
 
     fs.readFile(filePath, (error, content) => {
-        if (error) { 
-            res.writeHead(404); 
-            res.end('File not found'); 
-        } else { 
-            // ВАЖНО: text/html заставит браузер отрисовать страницу
-            res.writeHead(200, { 'Content-Type': contentType }); 
-            res.end(content, 'utf-8'); 
-        }
+        if (error) { res.writeHead(404); res.end('File not found'); } 
+        else { res.writeHead(200, { 'Content-Type': contentType }); res.end(content, 'utf-8'); }
     });
 });
 
@@ -55,15 +48,9 @@ const wss = new WebSocket.Server({ server });
 let players = {};
 
 async function fetchSupabase(endpoint, method = 'GET', body = null) {
-    const headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-    };
+    const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
-
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
     if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
     return res.status === 204 ? null : await res.json();
@@ -83,14 +70,10 @@ wss.on('connection', (ws) => {
                 
                 if (users.length > 0) {
                     if (users[0].password !== data.password) {
-                        ws.send(JSON.stringify({ type: 'authError', message: 'Неверный пароль!' }));
-                        return;
+                        ws.send(JSON.stringify({ type: 'authError', message: 'Неверный пароль!' })); return;
                     }
                 } else {
-                    const newPlayer = {
-                        nick: currentNick, password: data.password,
-                        appearance: data.appearance, x: 500, y: 0, facing: 1, coins: 0
-                    };
+                    const newPlayer = { nick: currentNick, password: data.password, appearance: data.appearance, x: 500, y: 0, facing: 1, coins: 0 };
                     await fetchSupabase('players', 'POST', newPlayer);
                     users.push(newPlayer);
                 }
@@ -99,24 +82,30 @@ wss.on('connection', (ws) => {
                 id = Math.random().toString(36).substr(2, 9);
                 
                 players[id] = { 
-                    id: id, nick: data.nick, x: saved.x, y: saved.y, 
-                    facing: saved.facing, appearance: saved.appearance, 
-                    isSitting: false, coins: saved.coins 
+                    id: id, nick: data.nick, x: saved.x || 500, y: saved.y || 0, 
+                    facing: saved.facing || 1, appearance: saved.appearance || data.appearance, 
+                    isSitting: false, coins: saved.coins || 0 
                 };
                 
-                ws.send(JSON.stringify({ type: 'authSuccess', player: players[id], others: Object.values(players).filter(p => p.id !== id) }));
-                broadcast({ type: 'playerJoined', player: players[id] }, ws);
+                // Отправляем успех + количество людей онлайн
+                ws.send(JSON.stringify({ 
+                    type: 'authSuccess', 
+                    player: players[id], 
+                    others: Object.values(players).filter(p => p.id !== id),
+                    totalOnline: Object.keys(players).length
+                }));
+                broadcast({ type: 'playerJoined', player: players[id], totalOnline: Object.keys(players).length }, ws);
             }
 
             if (data.type === 'move' && id && players[id]) {
-                players[id].x = data.x; players[id].y = data.y; players[id].facing = data.facing;
-                fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { x: data.x, y: data.y, facing: data.facing }).catch(e => console.log(e));
+                players[id].x = data.x; players[id].y = data.y; players[id].facing = data.facing; players[id].isSitting = data.isSitting;
+                // Не сохраняем каждое движение в базу, чтобы не спамить
                 broadcast({ type: 'playerMoved', id: id, x: data.x, y: data.y, facing: data.facing, isSitting: data.isSitting }, ws);
             }
 
             if (data.type === 'updateAppearance' && id && players[id]) {
                 players[id].appearance = data.appearance;
-                fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { appearance: data.appearance }).catch(e => console.log(e));
+                await fetchSupabase(`players?nick=eq.${currentNick}`, 'PATCH', { appearance: data.appearance }).catch(e => console.log(e));
                 broadcast({ type: 'appearanceChanged', id: id, appearance: data.appearance }, ws);
             }
 
@@ -133,8 +122,8 @@ wss.on('connection', (ws) => {
                     x: players[id].x, y: players[id].y, facing: players[id].facing 
                 }).catch(e => console.log(e));
             }
-            broadcast({ type: 'playerLeft', id: id }, null);
             delete players[id];
+            broadcast({ type: 'playerLeft', id: id, totalOnline: Object.keys(players).length }, null);
         }
     });
 });
