@@ -71,7 +71,79 @@
       <div class="input-frame">
         <input id="nickInput" type="text" placeholder="Никнейм" maxlength="16" autocomplete="off">
         <input id="passInput" type="password" placeholder="Пароль" maxlength="32">
-text('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn'), toast = $('toast');
+      </div>
+      <button id="loginBtn">Войти в игру</button>
+      <p id="loginError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="lobbyScreen" class="screen">
+    <canvas id="gameCanvas"></canvas>
+    <div id="toast"></div>
+    
+    <div id="hud">
+      <div class="top-left-panel">
+        <div id="onlineBadge"><span id="onlineCount">0</span> в сети <span id="onlineDot">⚫</span></div>
+        <button id="chatToggleBtn">💬 Чат</button>
+      </div>
+      <div class="top-right-panel">
+        <div id="playerInfo"><span id="playerName">—</span><button id="logoutBtn">Выйти</button></div>
+      </div>
+    </div>
+    
+    <button id="interactBtn">Действие</button>
+
+    <div id="controls">
+      <div class="move-btns">
+        <button id="btnLeft">◀</button>
+        <button id="btnRight">▶</button>
+      </div>
+      <button id="btnJump">⤒</button>
+    </div>
+    
+    <div id="chatPanel">
+      <div class="chat-header"><span>Чат лобби</span><button id="closeChatBtn">✖</button></div>
+      <div id="chatMessages"></div>
+      <div id="chatInputRow">
+        <input id="chatInput" type="text" placeholder="Сообщение..." maxlength="200">
+        <button id="sendBtn">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wardrobeContainer"></div>
+
+  <script>
+    // --- КООРДИНАТЫ МИРА ---
+    const BAR_X = 100;
+    const WARDROBE_X = 400;
+    
+    // 8 Дверей
+    const DOORS = [
+        { id: 'd1', x: 700 }, { id: 'd2', x: 900 }, { id: 'd3', x: 1100 }, { id: 'd4', x: 1300 },
+        { id: 'd5', x: 1500 }, { id: 'd6', x: 1700 }, { id: 'd7', x: 1900 }, { id: 'd8', x: 2100 }
+    ];
+
+    // Диваны: Красный и Оранжевый
+    const SEATS = [ 
+        { id: 'sofa1', x: 2500, w: 120, color: '#8b0000', type: 'sofa' }, 
+        { id: 'sofa2', x: 2700, w: 120, color: '#ff8c00', type: 'sofa' }  
+    ];
+    
+    const PLANTS = [ { x: 250 }, { x: 600 }, { x: 2300 }, { x: 2900 } ];
+
+    const DISCO_X = 3500; 
+    const DISCO_WIDTH = 300; 
+
+    // --- СОСТОЯНИЕ ---
+    const state = {
+      loggedIn: false, nick: '', myId: null,
+      player: { x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1, gender: 'male', colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000', colorShirt: '#7a3cff', colorPants: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a', isDancing: false, walkTimer: 0, danceTimer: 0, isSitting: false },
+      otherPlayers: {}, camera: { x: 0 }, keys: { left: false, right: false, jump: false }, nearInteract: null, worldWidth: 4000, groundY: 0, time: 0, blinkTimer: 0, isBlinking: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn'), toast = $('toast');
     let ws = null;
 
     function connectToServer() {
@@ -84,129 +156,276 @@ text('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), clos
         if (data.type === 'authSuccess') {
             let s = data.player.appearance;
             if (s) { 
-                state.player.colorSkin = s.colorSkin; state.player.colorHair = s.colorHair; state.player.colorEyes = s.colorEyes; state.player.colorShirt = s.colorShirt; state.player.colorPants = s.colorPants; state.player.hatType = s.hatType; state.player.hatColor = s.hatColor; state.player.gender = s.gender; 
-                state.player.topStyle = s.topStyle || 'tshirt'; state.player.bottomStyle = s.bottomStyle || 'pants'; state.player.shoesStyle = s.shoesStyle || 'boots'; state.player.hairStyle = s.hairStyle || 'straight'; state.player.petType = s.petType || 'none'; state.player.colorShoes = s.colorShoes || '#1a1a1a'; state.player.hatType = s.hatType || 'none'; state.player.colorSkin = s.colorSkin || '#f1c27d';
+                state.player.colorSkin = s.colorSkin || '#f1c27d'; state.player.colorHair = s.colorHair || '#3a2050'; state.player.colorEyes = s.colorEyes || '#000000'; state.player.colorShirt = s.colorShirt || '#7a3cff'; state.player.colorPants = s.colorPants || '#1a1a1a'; state.player.hatType = s.hatType || 'none'; state.player.hatColor = s.hatColor || '#1a1a1a'; state.player.gender = s.gender || 'male'; 
+                state.player.topStyle = s.topStyle || 'tshirt'; state.player.bottomStyle = s.bottomStyle || 'pants'; state.player.shoesStyle = s.shoesStyle || 'boots'; state.player.hairStyle = s.hairStyle || 'straight'; state.player.petType = s.petType || 'none'; state.player.colorShoes = s.colorShoes || '#1a1a1a';
             }
-            state.player      if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
-      
-               const vibrateX = (Math.random() - 0.5) * 1.5; const vibrateY = (Math.random() - 0.5) * 1.5; const breathe = Math.sin(state.time * 0.1) * 2;
-        ctx.translate(vibrateX, vibrateY); ctx.globalAlpha = 0.7; ctx.fillStyle = cSkin;
-        ctx.beginPath(); ctx.ellipse(8, -10 + breathe, 18, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(8, -2 + breathe, 24, 8, 0, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = 0.9; for(let i=0; i<6; i++) { const offsetX = Math.sin(state.time * 0.05 + i) * 12; const offsetY = Math.cos(state.time * 0.03 + i) * 8; ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(8 + offsetX, -8 + offsetY, 1.5 + Math.sin(i)*1, 0, Math.PI*2); ctx.fill(); }
-        ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(2, -14 + breathe, 4, 0, Math.PI*2); ctx.arc(14, -14 + breathe, 4, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(3, -13 + breathe, 2, 0, Math.PI*2); ctx.arc(15, -13 + breathe, 2, 0, Math.PI*2); ctx.fill();
-        ctx.restore(); return;
-      }
-
-      // Ноги
-      ctx.fillStyle = cSkin; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18);
-      // Руки
-      ctx.fillRect(armX_L, 24, 4, 15); ctx.fillRect(armX_R, 24, 4, 15);
-
-      // Низ
-      if (p.topStyle !== 'dress') {
-        if (p.bottomStyle === 'pants') { ctx.fillStyle = cPants; ctx.fillRect(5, 40, 6, 20); ctx.fillRect(13, 40, 6, 20); } 
-        else if (p.bottomStyle === 'shorts') { ctx.fillStyle = cPants; ctx.fillRect(5, 40, 6, 9); ctx.fillRect(13, 40, 6, 9); } 
-        else if (p.bottomStyle === 'skirt_short') { ctx.fillStyle = cPants; ctx.beginPath(); ctx.moveTo(4, 40); ctx.lineTo(20, 40); ctx.lineTo(24, 48); ctx.lineTo(0, 48); ctx.fill(); } 
-        else if (p.bottomStyle === 'skirt_tights') {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(5, 40, 6, 20); ctx.fillRect(13, 40, 6, 20);
-          ctx.fillStyle = 'rgba(0, 0, 0, 1)'; for(let ty=41; ty<60; ty+=2) { ctx.fillRect(6, ty, 1, 1); ctx.fillRect(8, ty, 1, 1); ctx.fillRect(10, ty, 1, 1); ctx.fillRect(14, ty, 1, 1); ctx.fillRect(16, ty, 1, 1); ctx.fillRect(18, ty, 1, 1); }
-          ctx.fillStyle = cPants; ctx.beginPath(); ctx.moveTo(4, 40); ctx.lineTo(20, 40); ctx.lineTo(24, 48); ctx.lineTo(0, 48); ctx.fill(); 
+            state.player.x = data.player.x; state.player.y = data.player.y; state.player.facing = data.player.facing; state.myId = data.player.id;
+            for (let p of data.others) { let op = p; if (op.appearance) op = { ...op, ...op.appearance }; state.otherPlayers[op.id] = op; }
+            updateOnlineDisplay(data.others.length + 1); return;
         }
+        if (data.type === 'playerJoined') { let op = data.player; if (op.appearance) op = { ...op, ...op.appearance }; state.otherPlayers[op.id] = op; updateOnlineDisplay(Object.keys(state.otherPlayers).length + 1); addSystemMessage(`${op.nick} зашел`); }
+        if (data.type === 'playerMoved') { if (state.otherPlayers[data.id]) { state.otherPlayers[data.id].x = data.x; state.otherPlayers[data.id].y = data.y; state.otherPlayers[data.id].facing = data.facing; state.otherPlayers[data.id].isDancing = (data.x > DISCO_X - DISCO_WIDTH/2 && data.x < DISCO_X + DISCO_WIDTH/2); } }
+        if (data.type === 'appearanceChanged') { if (state.otherPlayers[data.id] && data.appearance) state.otherPlayers[data.id] = { ...state.otherPlayers[data.id], ...data.appearance }; }
+        if (data.type === 'playerLeft') { const p = state.otherPlayers[data.id]; if (p) { addSystemMessage(`${p.nick} вышел`); delete state.otherPlayers[data.id]; updateOnlineDisplay(Object.keys(state.otherPlayers).length + 1); } }
+        if (data.type === 'chat') addChatMessage(data.nick, data.text);
+      };
+      ws.onclose = () => addSystemMessage("Связь потеряна!");
+    }
+
+    loginBtn.addEventListener('click', () => {
+      const nick = nickInput.value.trim(); if (nick.length < 2) { loginError.textContent = 'Ник минимум 2 символа'; return; }
+      loginError.textContent = ''; state.loggedIn = true; state.nick = nick; loginScreen.classList.remove('active'); lobbyScreen.classList.add('active'); playerName.textContent = nick;
+      try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
+      connectToServer(); setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
+    });
+
+    logoutBtn.addEventListener('click', () => { if (ws) { ws.close(); ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
+    
+    interactBtn.addEventListener('click', () => {
+      if (state.nearInteract === 'wardrobe') {
+          if (typeof window.openWardrobe === 'function') { window.openWardrobe(ws, state); }
+      }
+    });
+
+    let lastSentX = 0, sendTimer = 0;
+    function updatePhysics(dt) {
+      if (!state.loggedIn) return; const p = state.player; const speed = 4;
+      
+      p.vx = 0; 
+      if (state.keys.left) { p.vx = -speed; p.facing = -1; } 
+      if (state.keys.right) { p.vx = speed; p.facing = 1; } 
+      p.x += p.vx;
+      
+      if (p.vx !== 0 && p.onGround) { p.walkTimer += dt; } else { p.walkTimer = 0; }
+
+      if (p.x < 0) p.x = 0; if (p.x + p.w > state.worldWidth) p.x = state.worldWidth - p.w;
+      p.vy += 0.55; p.y += p.vy; p.onGround = false;
+      if (p.y + p.h >= 0) { p.y = 0 - p.h; p.vy = 0; p.onGround = true; }
+      
+      const onDisco = (p.x + p.w/2 > DISCO_X - DISCO_WIDTH/2 && p.x + p.w/2 < DISCO_X + DISCO_WIDTH/2);
+      if (onDisco !== p.isDancing) {
+          p.isDancing = onDisco;
+          if (onDisco) { p.danceTimer = 0; }
+      }
+      
+      if (p.isDancing) { p.danceTimer += dt; }
+
+      const targetCam = p.x + p.w/2 - canvas.width / 2; state.camera.x += (targetCam - state.camera.x) * 0.15;
+      if (state.camera.x < 0) state.camera.x = 0; const maxCam = state.worldWidth - canvas.width; if (state.camera.x > maxCam) state.camera.x = maxCam;
+      
+      sendTimer += dt * 16.67;
+      if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0; }
+      
+      const px = p.x + p.w/2;
+      if (Math.abs(px - WARDROBE_X) < 60) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); } 
+      else { state.nearInteract = null; interactBtn.classList.remove('show'); }
+      
+      state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
+    }
+
+    function drawFurniture(camX, floorY) {
+      for (let plant of PLANTS) { const px = plant.x - camX; if (px < -100 || px > canvas.width + 100) continue; ctx.fillStyle = '#8b4513'; ctx.beginPath(); ctx.moveTo(px - 15, floorY - 20); ctx.lineTo(px + 15, floorY - 20); ctx.lineTo(px + 10, floorY); ctx.lineTo(px - 10, floorY); ctx.fill(); ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.arc(px, floorY - 35, 20, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px - 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px + 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); }
+      for (let s of SEATS) { const sx = s.x - camX; if (sx < -150 || sx > canvas.width + 150) continue; if (s.type === 'sofa') { ctx.fillStyle = s.color; ctx.fillRect(sx - s.w/2, floorY - 40, s.w, 40); ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); ctx.fillStyle = '#222'; ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15); } }
+    }
+
+    function drawDisco(camX, floorY) {
+      const dx = DISCO_X - camX; if (dx < -300 || dx > canvas.width + 300) return;
+      const tile = 40; const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile; const endX = startX + DISCO_WIDTH + tile;
+      for (let x = startX; x < endX; x += tile) { const sx = x - camX; if (sx < -tile || sx > canvas.width + tile) continue; const hue = (state.time * 5 + x) % 360; ctx.fillStyle = `hsl(${hue}, 100%, 50%)`; ctx.fillRect(sx, floorY, tile, canvas.height - floorY); }
+      const speakerY = floorY - 70;
+      const drawSpeaker = (sx) => { ctx.fillStyle = '#111'; ctx.fillRect(sx - 15, speakerY, 30, 70); ctx.fillStyle = '#333'; ctx.fillRect(sx - 12, speakerY + 5, 24, 20); ctx.fillRect(sx - 12, speakerY + 30, 24, 20); ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(sx, speakerY + 15, 8, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(sx, speakerY + 40, 8, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(sx, speakerY + 15, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(sx, speakerY + 40, 4, 0, Math.PI*2); ctx.fill(); };
+      drawSpeaker(dx - 120); drawSpeaker(dx + 120);
+      const ballY = floorY - 300 + Math.sin(state.time * 0.05) * 10; ctx.fillStyle = '#555'; ctx.fillRect(dx - 1, 0, 2, ballY); 
+      ctx.save(); ctx.translate(dx, ballY); ctx.globalCompositeOperation = 'screen';
+      for(let i=0; i<6; i++){ ctx.save(); ctx.rotate(state.time*0.03 + i * (Math.PI*2/6)); const grad = ctx.createLinearGradient(0, 0, 0, 500); grad.addColorStop(0, 'rgba(255,255,255,0.2)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-80, 500); ctx.lineTo(80, 500); ctx.lineTo(5, 0); ctx.fill(); ctx.restore(); }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#999'; for(let i=-2; i<=2; i++) { ctx.fillRect(i*10 - 2, -25, 4, 50); ctx.fillRect(-25, i*10 - 2, 50, 4); } ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-8, -8, 5, 0, Math.PI*2); ctx.fill(); 
+      ctx.restore();
+    }
+
+    function drawBar(camX, floorY) {
+      const bx = BAR_X - camX; if (bx < -200 || bx > canvas.width + 200) return;
+      const tableTop = floorY - 100; 
+      const npcBob = Math.sin(state.time * 0.05) * 2;
+      ctx.save(); ctx.translate(bx, tableTop - 50 + npcBob); ctx.scale(1.6, 1.6);
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18);
+      ctx.fillStyle = '#000000'; ctx.fillRect(4, 24, 16, 18);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 24, 8, 12); ctx.fillStyle = '#000000'; ctx.fillRect(11, 24, 2, 10);
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); ctx.fillRect(3, 0, 18, 20);
+      ctx.fillStyle = '#3a2050'; ctx.fillRect(3, 0, 18, 6);
+      ctx.fillStyle = '#fff'; ctx.fillRect(6, 6, 5, 6); ctx.fillRect(13, 6, 5, 6);
+      ctx.fillStyle = '#000'; ctx.fillRect(8, 8, 2, 3); ctx.fillRect(15, 8, 2, 3);
+      ctx.fillStyle = '#000'; ctx.fillRect(7, 15, 10, 2); ctx.fillRect(17, 14, 2, 1); 
+      ctx.restore();
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 60, tableTop, 150, 100); 
+      ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 65, tableTop - 5, 160, 10); 
+      ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 100, 5); ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20); ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
+    }
+
+    function drawWardrobe(camX, floorY) {
+      const wx = WARDROBE_X - camX; if (wx < -150 || wx > canvas.width + 150) return;
+      ctx.fillStyle = '#0a0512'; ctx.fillRect(wx - 40, floorY - 150, 80, 150); ctx.fillStyle = '#05020a'; ctx.fillRect(wx - 35, floorY - 145, 70, 145); ctx.fillStyle = '#c19a6b'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(wx + 5, floorY - 75, 5, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#7a3cff'; ctx.beginPath(); ctx.moveTo(wx - 35, floorY - 145); ctx.lineTo(wx + 15, floorY - 145); ctx.lineTo(wx + 5, floorY - 110); ctx.lineTo(wx - 25, floorY - 120); ctx.closePath(); ctx.fill();
+    }
+
+    function drawDoors(camX, floorY) {
+      for (const d of DOORS) {
+        const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue; 
+        const dh = 140, dw = 80, dy = floorY - dh, dxPos = dx - dw/2;
+        ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); 
+        ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
+        ctx.fillStyle = '#4a3020'; 
+        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
+        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
+        ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЗАКРЫТО', dx, dy - 22); ctx.textAlign = 'left';
+      }
+    }
+
+    // --- ОТРИСОВКА ПЕРСОНАЖА (С КОЛЕНЯМИ И ПРАВИЛЬНЫМ СИДЕНИЕМ) ---
+    function shadeColor(color, percent) {
+        if(!color || color.length < 7) return '#000';
+        let R = parseInt(color.substring(1,3),16); let G = parseInt(color.substring(3,5),16); let B = parseInt(color.substring(5,7),16);
+        R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
+        R = (R<255)?R:255; G = (G<255)?G:255; B = (B<255)?B:255;
+        let rHex = R.toString(16); if(rHex.length==1) rHex="0"+rHex; let gHex = G.toString(16); if(gHex.length==1) gHex="0"+gHex; let bHex = B.toString(16); if(bHex.length==1) bHex="0"+bHex;
+        return "#"+rHex+gHex+bHex;
+    }
+
+    function drawCharacter(p, camX, floorY) {
+      const px = p.x - camX; 
+      
+      // Вычисляем, сидит ли персонаж (если он на диване)
+      let isSitting = false;
+      for (let s of SEATS) {
+          if (p.x + p.w/2 > s.x - s.w/2 && p.x + p.w/2 < s.x + s.w/2) isSitting = true;
       }
 
-      // Обувь
-      if (p.shoesStyle === 'boots') { ctx.fillStyle = p.colorShoes || '#1a1a1a'; ctx.fillRect(5, 54, 6, 6); ctx.fillRect(13, 54, 6, 6); ctx.fillStyle = shadeColor(p.colorShoes || '#1a1a1a', -40); ctx.fillRect(5, 57, 6, 3); ctx.fillRect(13, 57, 6, 3); } 
-      else if (p.shoesStyle === 'sneakers') { ctx.fillStyle = p.colorShoes || '#1a1a1a'; ctx.fillRect(5, 54, 6, 4); ctx.fillRect(13, 54, 6, 4); ctx.fillStyle = '#fff'; ctx.fillRect(5, 56, 6, 4); ctx.fillRect(13, 56, 6, 4); ctx.fillStyle = shadeColor(p.colorShoes || '#1a1a1a', -30); ctx.fillRect(6, 55, 4, 1); ctx.fillRect(14, 55, 4, 1); } 
-      else if (p.shoesStyle === 'heels') { ctx.fillStyle = p.colorShoes || '#1a1a1a'; ctx.fillRect(5, 52, 6, 3); ctx.fillRect(13, 52, 6, 3); ctx.fillRect(6, 55, 4, 1); ctx.fillRect(14, 55, 4, 1); ctx.fillRect(7, 56, 1, 4); ctx.fillRect(15, 56, 1, 4); }
+      let hipY = floorY - 18; 
+      if (isSitting) hipY = floorY - 10; 
 
-      // Торс
-      const bodyX = isFemale ? 6 : 4; 
-      ctx.fillStyle = cSkin; ctx.fillRect(bodyX, 24, shoulderW, 16);
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      if (isFemale) { ctx.fillRect(bodyX + 2, 24, shoulderW - 4, 2); ctx.fillRect(bodyX + (shoulderW/2) - 1, 26, 2, 6); } else { ctx.fillRect(bodyX + 2, 24, shoulderW - 4, 2); }
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(bodyX + (shoulderW/2) - 1, 36, 2, 2);
+      ctx.save();
+      
+      // Тень
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
+      ctx.beginPath(); ctx.ellipse(px + p.w/2, floorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
 
-      ctx.fillStyle = cShirt; 
-      if (p.topStyle === 'tshirt') { ctx.fillRect(bodyX, 24, shoulderW, 16); ctx.fillRect(armX_L, 24, 4, 10); ctx.fillRect(armX_R, 24, 4, 10); ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(bodyX + 3, 24, shoulderW - 6, 2); } 
-      else if (p.topStyle === 'vest') { ctx.fillRect(bodyX, 24, shoulderW, 16); ctx.fillStyle = '#fff'; ctx.fillRect(bodyX + 6, 24, 4, 16); ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(bodyX + 3, 24, shoulderW - 6, 2); } 
-      else if (p.topStyle === 'hoodie') { ctx.fillRect(bodyX, 24, shoulderW, 16); ctx.fillStyle = cShirt; ctx.fillRect(bodyX + 2, 22, shoulderW - 4, 4); ctx.fillRect(armX_L, 24, 4, 14); ctx.fillRect(armX_R, 24, 4, 14); ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(bodyX + 4, 32, shoulderW - 8, 6); ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(bodyX + 3, 24, shoulderW - 6, 2); } 
-      else if (p.topStyle === 'dress') { ctx.fillRect(bodyX - 1, 24, shoulderW + 2, 14); ctx.fillStyle = '#ff0000'; ctx.fillRect(bodyX - 1, 36, shoulderW + 2, 2); ctx.fillStyle = cShirt; ctx.beginPath(); ctx.moveTo(bodyX - 1, 38); ctx.lineTo(bodyX + shoulderW + 1, 38); ctx.lineTo(bodyX + shoulderW + 8, 55); ctx.lineTo(bodyX - 8, 55); ctx.fill(); ctx.fillRect(armX_L, 24, 4, 8); ctx.fillRect(armX_R, 24, 4, 8); } 
-      else if (p.topStyle === 'tank_top') { ctx.fillStyle = cShirt; ctx.fillRect(bodyX, 27, shoulderW, 6); ctx.fillRect(bodyX + 2, 24, 2, 3); ctx.fillRect(bodyX + shoulderW - 4, 24, 2, 3); }
+      let offsetY = 0;
+      let bodyRotation = 0;
+      let leftArmAngle = 0, rightArmAngle = 0;
+      let leftHipAngle = 0, rightHipAngle = 0;
+      let leftKneeAngle = 0, rightKneeAngle = 0;
+
+      if (p.isDancing) {
+          const cycle = Math.floor(p.danceTimer / 25) % 4; 
+          bodyRotation = Math.sin(p.danceTimer * 0.1) * 0.05; 
+          offsetY = Math.abs(Math.sin(p.danceTimer * 0.15)) * -2;
+
+          const bounce = Math.sin(p.danceTimer * 0.15);
+          leftKneeAngle = bounce * 0.3;
+          rightKneeAngle = -bounce * 0.3;
+
+          if (cycle === 0) rightArmAngle = -Math.PI / 3; 
+          else if (cycle === 1) rightArmAngle = Math.PI / 1.5;
+          else if (cycle === 2) leftArmAngle = -Math.PI / 1.5; 
+          else if (cycle === 3) leftArmAngle = Math.PI / 3;
+      } else if (isSitting) {
+          leftHipAngle = Math.PI / 2; 
+          rightHipAngle = Math.PI / 2;
+          leftKneeAngle = -Math.PI / 2; 
+          rightKneeAngle = -Math.PI / 2;
+      } else {
+          // Ходьба
+          if (p.walkTimer > 0) {
+              const walkCycle = Math.sin(p.walkTimer * 0.25); 
+              offsetY = Math.abs(walkCycle) * -2; 
+              leftHipAngle = walkCycle * 0.4;
+              rightHipAngle = -walkCycle * 0.4;
+              leftKneeAngle = walkCycle > 0 ? -0.4 : 0;
+              rightKneeAngle = walkCycle < 0 ? -0.4 : 0;
+              leftArmAngle = -walkCycle * 0.3;
+              rightArmAngle = walkCycle * 0.3;
+          }
+      }
+
+      // --- НОГИ ---
+      const drawLeg = (startX, startY, hipAngle, kneeAngle) => {
+          ctx.save();
+          ctx.translate(startX, startY);
+          ctx.rotate(hipAngle);
+          ctx.fillStyle = p.colorPants;
+          ctx.fillRect(-3, 0, 6, 9); 
+          ctx.translate(0, 9);
+          ctx.rotate(kneeAngle);
+          ctx.fillRect(-3, 0, 6, 9);
+          ctx.fillStyle = '#111';
+          ctx.fillRect(-3, 9, 6, 2);
+          ctx.restore();
+      };
+
+      drawLeg(px + p.w/2 - 5, hipY + offsetY, leftHipAngle, leftKneeAngle);
+      drawLeg(px + p.w/2 + 5, hipY + offsetY, rightHipAngle, rightKneeAngle);
+
+      // --- ТОРС И ГОЛОВА ---
+      ctx.save();
+      ctx.translate(px + p.w/2, hipY + offsetY);
+      
+      if (p.isDancing) ctx.rotate(bodyRotation);
+      if (isSitting) ctx.rotate(0.2); 
+
+      ctx.fillStyle = p.colorShirt; 
+      ctx.fillRect(-8, -18, 16, 18); 
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'; 
+      ctx.fillRect(-5, -18, 10, 2);
+
+      // Руки (5 пикселей)
+      ctx.save();
+      ctx.translate(-8, -14); 
+      ctx.rotate(leftArmAngle);
+      ctx.fillStyle = p.colorSkin;
+      ctx.fillRect(-5, 0, 5, 15); 
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(8, -14); 
+      ctx.rotate(rightArmAngle);
+      ctx.fillStyle = p.colorSkin;
+      ctx.fillRect(0, 0, 5, 15); 
+      ctx.restore();
 
       // Голова
-      ctx.fillStyle = cSkin; ctx.fillRect(3, 0, 18, 20);
-      if (isFemale) { ctx.fillStyle = 'rgba(255, 105, 180, 0.4)'; ctx.fillRect(3, 12, 3, 3); ctx.fillRect(18, 12, 3, 3); }
-      ctx.fillStyle = cSkin; ctx.fillRect(1, 8, 2, 4); ctx.fillRect(21, 8, 2, 4);
+      ctx.translate(0, -18); 
+      ctx.fillStyle = p.colorSkin; 
+      ctx.fillRect(-9, -20, 18, 20);
+      ctx.fillStyle = p.colorHair; 
+      ctx.fillRect(-9, -20, 18, 6);
       
-      if (hType !== 'mask' && hType !== 'frankenstein') {
-        const eyeOffset = p.facing === 1 ? 2 : 0; 
-        if (cEyes === '❤️') {
-          ctx.fillStyle = '#ff0000'; ctx.fillRect(7 + eyeOffset, 7, 2, 2); ctx.fillRect(10 + eyeOffset, 7, 2, 2); ctx.fillRect(6 + eyeOffset, 9, 7, 2); ctx.fillRect(7 + eyeOffset, 11, 5, 1); ctx.fillRect(8 + eyeOffset, 12, 3, 1); ctx.fillRect(9 + eyeOffset, 13, 1, 1); ctx.fillRect(14 + eyeOffset, 7, 2, 2); ctx.fillRect(17 + eyeOffset, 7, 2, 2); ctx.fillRect(13 + eyeOffset, 9, 7, 2); ctx.fillRect(14 + eyeOffset, 11, 5, 1); ctx.fillRect(15 + eyeOffset, 12, 3, 1); ctx.fillRect(16 + eyeOffset, 13, 1, 1);
-        } else if (state.isBlinking) {
-          ctx.fillStyle = cSkin; ctx.fillRect(6 + eyeOffset, 6, 5, 6); ctx.fillRect(13 + eyeOffset, 6, 5, 6); ctx.fillStyle = '#000'; ctx.fillRect(6 + eyeOffset, 8, 5, 1); ctx.fillRect(13 + eyeOffset, 8, 5, 1);
-        } else {
-          ctx.fillStyle = '#fff'; ctx.fillRect(6 + eyeOffset, 6, 5, 6); ctx.fillRect(13 + eyeOffset, 6, 5, 6); ctx.fillStyle = cEyes; ctx.fillRect(8 + eyeOffset, 8, 2, 3); ctx.fillRect(15 + eyeOffset, 8, 2, 3);
-        }
-        if (isFemale) { ctx.fillStyle = '#000'; ctx.fillRect(5 + eyeOffset, 5, 6, 1); ctx.fillRect(12 + eyeOffset, 5, 6, 1); }
-        
-        // Ухмылка (1 пиксель сбоку)
-        ctx.fillStyle = '#000'; ctx.fillRect(9 + eyeOffset, 15, 6, 2); ctx.fillRect(15 + eyeOffset, 14, 1, 1);
-      }
+      const eyeOffset = isSitting ? 0 : (p.facing === 1 ? 2 : 0); 
+      ctx.fillStyle = '#fff'; ctx.fillRect(-6 + eyeOffset, -14, 5, 6); ctx.fillRect(1 + eyeOffset, -14, 5, 6);
+      ctx.fillStyle = '#000'; ctx.fillRect(-4 + eyeOffset, -12, 2, 3); ctx.fillRect(3 + eyeOffset, -12, 2, 3);
+      ctx.fillStyle = '#000'; ctx.fillRect(-3 + eyeOffset, -5, 6, 2); ctx.fillRect(3 + eyeOffset, -6, 1, 1); 
 
-      // Волосы
-      if (p.hairStyle !== 'bald') {
-        if (p.hairStyle === 'braid') {
-          const hx = 19; const hairDark = shadeColor(cHair, -30); const hairLight = shadeColor(cHair, 30); ctx.fillStyle = cHair; ctx.fillRect(hx, 6, 6, 22); ctx.fillStyle = hairDark; for(let i=0; i<6; i++) { ctx.fillRect(hx, 8 + i*4, 6, 2); } ctx.fillStyle = hairLight; for(let i=0; i<5; i++) { ctx.fillRect(hx + 2, 10 + i*4, 2, 2); } ctx.fillStyle = '#ff0000'; ctx.fillRect(hx + 1, 28, 4, 2);
-        } else {
-          ctx.fillStyle = cHair; if (isFemale) { ctx.fillRect(1, 0, 22, 8); ctx.fillRect(0, 8, 4, 14); ctx.fillRect(20, 8, 4, 14); } else { ctx.fillRect(2, 0, 20, 6); }
-          if (p.hairStyle === 'curly') {
-            const hairDark = shadeColor(cHair, -20); const hairLight = shadeColor(cHair, 20); ctx.fillStyle = cHair; ctx.beginPath(); ctx.arc(4, 2, 3, 0, Math.PI*2); ctx.arc(10, 1, 3, 0, Math.PI*2); ctx.arc(16, 1, 3, 0, Math.PI*2); ctx.arc(22, 2, 3, 0, Math.PI*2); ctx.arc(2, 6, 2.5, 0, Math.PI*2); ctx.arc(7, 5, 2.5, 0, Math.PI*2); ctx.arc(13, 5, 2.5, 0, Math.PI*2); ctx.arc(19, 5, 2.5, 0, Math.PI*2); if(isFemale) { ctx.arc(1, 10, 2.5, 0, Math.PI*2); ctx.arc(21, 10, 2.5, 0, Math.PI*2); } ctx.fill();
-            ctx.fillStyle = hairLight; ctx.beginPath(); ctx.arc(6, 3, 1.5, 0, Math.PI*2); ctx.arc(12, 2, 1.5, 0, Math.PI*2); ctx.arc(18, 3, 1.5, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = hairDark; ctx.beginPath(); ctx.arc(3, 5, 1.5, 0, Math.PI*2); ctx.arc(15, 4, 1.5, 0, Math.PI*2); ctx.arc(21, 5, 1.5, 0, Math.PI*2); ctx.fill();
-          }
-        }
-      }
-
-      // Шляпы
-      if (hType === 'cap') { ctx.fillStyle = hColor; ctx.fillRect(2, -1, 20, 6); ctx.fillRect(15, 2, 8, 3); ctx.fillStyle = '#ffd700'; ctx.fillRect(7, 1, 3, 2); ctx.fillRect(12, 1, 3, 2); } 
-      else if (hType === 'straw') { ctx.fillStyle = hColor; ctx.fillRect(-2, 2, 28, 4); ctx.fillRect(5, -3, 14, 6); ctx.fillStyle = '#ff0000'; ctx.fillRect(5, 1, 14, 2); } 
-      else if (hType === 'crown') { ctx.fillStyle = hColor; ctx.fillRect(4, -4, 16, 4); ctx.beginPath(); ctx.moveTo(4, -4); ctx.lineTo(6, -10); ctx.lineTo(9, -4); ctx.lineTo(12, -11); ctx.lineTo(15, -4); ctx.lineTo(18, -10); ctx.lineTo(20, -4); ctx.fill(); ctx.fillStyle = '#ff0000'; ctx.fillRect(7, -2, 2, 2); ctx.fillRect(11, -3, 2, 2); ctx.fillRect(15, -2, 2, 2); } 
-      else if (hType === 'witch_hat') {
-        ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.ellipse(12, -1, 24, 5, 0, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(2, -1); ctx.lineTo(22, -1); ctx.lineTo(16, -22); ctx.fill(); ctx.beginPath(); ctx.moveTo(16, -22); ctx.lineTo(26, -18); ctx.lineTo(18, -15); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(8, -1); ctx.lineTo(12, -15); ctx.lineTo(14, -15); ctx.lineTo(10, -1); ctx.fill(); ctx.fillStyle = '#228b22'; ctx.fillRect(4, -5, 16, 3); ctx.fillStyle = '#ffd700'; ctx.fillRect(10, -5, 4, 3);
-      } 
-      else if (hType === 'frankenstein') {
-        ctx.fillStyle = '#8b9a8b'; ctx.fillRect(2, 2, 20, 18); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(2, 0, 20, 4); ctx.fillStyle = '#cccccc'; ctx.fillRect(0, 10, 3, 4); ctx.fillRect(21, 10, 3, 4); ctx.fillStyle = '#000'; ctx.fillRect(8, 16, 8, 1); ctx.fillRect(12, 12, 1, 3); ctx.fillStyle = '#ff0000'; ctx.fillRect(6, 6, 4, 2); ctx.fillRect(14, 6, 4, 2);
-      } 
-      else if (hType === 'cat_ears') {
-        ctx.fillStyle = hColor; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(6, -12); ctx.lineTo(12, 0); ctx.fill(); ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(18, -12); ctx.lineTo(22, 0); ctx.fill(); ctx.fillStyle = '#ffb6c1'; ctx.beginPath(); ctx.moveTo(5, -1); ctx.lineTo(7, -8); ctx.lineTo(10, -1); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -1); ctx.lineTo(17, -8); ctx.lineTo(19, -1); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(2, 14); ctx.lineTo(-4, 12); ctx.stroke(); ctx.beginPath(); ctx.moveTo(2, 16); ctx.lineTo(-4, 16); ctx.stroke(); ctx.beginPath(); ctx.moveTo(22, 14); ctx.lineTo(28, 12); ctx.stroke(); ctx.beginPath(); ctx.moveTo(22, 16); ctx.lineTo(28, 16); ctx.stroke();
-      } 
-      else if (hType === 'horns') { ctx.fillStyle = hColor; ctx.beginPath(); ctx.moveTo(3, 2); ctx.lineTo(1, -4); ctx.lineTo(6, 0); ctx.fill(); ctx.beginPath(); ctx.moveTo(21, 2); ctx.lineTo(23, -4); ctx.lineTo(18, 0); ctx.fill(); } 
-      else if (hType === 'mask') {
-        ctx.fillStyle = hColor; ctx.beginPath(); ctx.moveTo(2, 4); ctx.lineTo(22, 4); ctx.lineTo(20, 20); ctx.lineTo(18, 22); ctx.lineTo(6, 22); ctx.lineTo(4, 20); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.moveTo(12, 4); ctx.quadraticCurveTo(10, 10, 12, 16); ctx.quadraticCurveTo(14, 10, 12, 4); ctx.fill(); ctx.beginPath(); ctx.moveTo(6, 6); ctx.lineTo(10, 12); ctx.lineTo(8, 14); ctx.lineTo(4, 8); ctx.fill(); ctx.beginPath(); ctx.moveTo(18, 6); ctx.lineTo(14, 12); ctx.lineTo(16, 14); ctx.lineTo(20, 8); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(4, 16, 16, 5); ctx.fillStyle = '#000000'; for(let i=4; i<20; i+=3) { ctx.fillRect(i, 16, 1, 5); }
-      }
-
-      // Питомцы (Летучая мышь/Кот)
-      if (p.petType === 'bat') {
-        const px2 = Math.cos(state.time * 0.05) * 80; const py2 = -200 + Math.sin(state.time * 0.05) * 30;
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(px2, py2, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(px2, py2); ctx.lineTo(px2 - 20, py2 - 10); ctx.lineTo(px2 - 25, py2 + 10); ctx.fill(); ctx.beginPath(); ctx.moveTo(px2, py2); ctx.lineTo(px2 + 20, py2 - 10); ctx.lineTo(px2 + 25, py2 + 10); ctx.fill();
-      } else if (p.petType === 'cat') {
-        const px2 = 100; const py2 = -60;
-        ctx.fillStyle = '#000'; ctx.fillRect(px2, py2 - 40, 35, 40); ctx.beginPath(); ctx.arc(px2 + 17, py2 - 45, 18, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(px2 + 5, py2 - 60); ctx.lineTo(px2, py2 - 80); ctx.lineTo(px2 + 20, py2 - 65); ctx.fill(); ctx.beginPath(); ctx.moveTo(px2 + 30, py2 - 60); ctx.lineTo(px2 + 35, py2 - 80); ctx.lineTo(px2 + 15, py2 - 65); ctx.fill(); ctx.fillStyle = '#ff0'; ctx.fillRect(px2 + 10, py2 - 48, 6, 6); ctx.fillRect(px2 + 22, py2 - 48, 6, 6);
-      }
-
+      ctx.restore(); 
       ctx.restore();
-      if (p.nick) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16); ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left'; }
     }
 
     function draw() {
       const w = canvas.width, h = canvas.height; const camX = Math.floor(state.camera.x); state.groundY = h - 80; 
-      BAR_TABLE.y = state.groundY - BAR_TABLE.h; 
+      const floorY = state.groundY;
+      
       const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1a0a2e'); bg.addColorStop(0.7, '#2a1040'); bg.addColorStop(1, '#0a0512'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       ctx.strokeStyle = 'rgba(122, 60, 255, 0.15)'; ctx.lineWidth = 15; for (let x = Math.floor(camX / 600) * 600; x < camX + w + 600; x += 600) { ctx.beginPath(); ctx.arc(x - camX + 300, state.groundY - 150, 250, Math.PI, 0); ctx.stroke(); }
-      const floorY = state.groundY, tile = 40; for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
+      
+      const tile = 40; for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
+      
       drawFurniture(camX, floorY); drawDisco(camX, floorY); drawBar(camX, floorY); drawWardrobe(camX, floorY); drawDoors(camX, floorY);
-      for (let id in state.otherPlayers) { drawCharacter(state.otherPlayers[id], camX, floorY); }
+      
+      for (let id in state.otherPlayers) { 
+          const other = state.otherPlayers[id];
+          // Определяем, сидит ли другой игрок
+          for (let s of SEATS) { if (other.x + 12 > s.x - s.w/2 && other.x + 12 < s.x + s.w/2) other.isSitting = true; }
+          drawCharacter(other, camX, floorY); 
+      }
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
 
@@ -236,4 +455,4 @@ text('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), clos
   
   <script src="wardrobe.js"></script>
 </body>
-  </html>
+</html>
