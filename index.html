@@ -11,6 +11,7 @@
     .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
     .screen.active { display: flex; }
 
+    /* ВХОД */
     #loginScreen { align-items: center; justify-content: center; background: radial-gradient(circle at 50% 20%, #2a1040 0%, #0a0a12 80%); z-index: 50; }
     .login-box { width: 90%; max-width: 420px; padding: 30px 24px; background: rgba(15, 10, 25, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(122, 60, 255, 0.4); border-radius: 20px; box-shadow: 0 0 30px rgba(122, 60, 255, 0.2); text-align: center; }
     .title-glow h1 { font-size: 32px; color: #ff6ad5; text-shadow: 0 0 10px #ff6ad5, 0 0 20px #ff6ad5; letter-spacing: 2px; margin-bottom: 8px; }
@@ -22,7 +23,9 @@
     .error { color: #ff5566; font-size: 13px; margin-top: 15px; min-height: 18px; }
 
     #lobbyScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; overflow: hidden; }
-    #gameCanvas { width: 100%; height: 100%; display: block; }
+    
+    /* Убрали размытие пикселей */
+    #gameCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     
     #hud { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; }
     
@@ -35,7 +38,7 @@
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     
-    #interactBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
+    #interactBtn { position: absolute; top: 20%; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
     #interactBtn.show { display: block; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
@@ -129,14 +132,19 @@
     const PLANTS = [ { x: 250 }, { x: 600 }, { x: 2300 }, { x: 2900 } ];
     const DISCO_X = 3500; 
     const DISCO_WIDTH = 300; 
-
-    // Уменьшили высоту прыжка, чтобы не улетал за экран
     const JUMP_FORCE = -9; 
 
     const state = {
       loggedIn: false, nick: '', myId: null,
-      player: { x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1, gender: 'male', colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000', colorShirt: '#7a3cff', colorPants: '#1a1a1a', colorShoes: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a', hairStyle: 'straight', topStyle: 'tshirt', bottomStyle: 'pants', shoesStyle: 'boots', petType: 'none', isDancing: false, walkTimer: 0, danceTimer: 0 },
-      otherPlayers: {}, camera: { x: 0 }, keys: { left: false, right: false, jump: false }, nearInteract: null, worldWidth: 4000, groundY: 0, time: 0, blinkTimer: 0, isBlinking: false
+      player: { 
+          x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1, gender: 'male', 
+          colorSkin: '#f1c27d', colorHair: '#3a2050', colorEyes: '#000000', colorShirt: '#7a3cff', colorPants: '#1a1a1a', 
+          colorShoes: '#1a1a1a', hatType: 'none', hatColor: '#1a1a1a', hairStyle: 'straight', topStyle: 'tshirt', 
+          bottomStyle: 'pants', shoesStyle: 'boots', petType: 'none', isDancing: false, walkTimer: 0, danceTimer: 0,
+          isSitting: false // НОВОЕ: состояние сидения
+      },
+      otherPlayers: {}, camera: { x: 0 }, keys: { left: false, right: false, jump: false }, 
+      nearInteract: null, worldWidth: 4000, groundY: 0, time: 0, blinkTimer: 0, isBlinking: false
     };
 
     const $ = (id) => document.getElementById(id);
@@ -161,7 +169,15 @@
             updateOnlineDisplay(data.others.length + 1); return;
         }
         if (data.type === 'playerJoined') { let op = data.player; if (op.appearance) op = { ...op, ...op.appearance }; state.otherPlayers[op.id] = op; updateOnlineDisplay(Object.keys(state.otherPlayers).length + 1); addSystemMessage(`${op.nick} зашел`); }
-        if (data.type === 'playerMoved') { if (state.otherPlayers[data.id]) { state.otherPlayers[data.id].x = data.x; state.otherPlayers[data.id].y = data.y; state.otherPlayers[data.id].facing = data.facing; state.otherPlayers[data.id].isDancing = (data.x > DISCO_X - DISCO_WIDTH/2 && data.x < DISCO_X + DISCO_WIDTH/2); } }
+        if (data.type === 'playerMoved') { 
+            if (state.otherPlayers[data.id]) { 
+                state.otherPlayers[data.id].x = data.x; 
+                state.otherPlayers[data.id].y = data.y; 
+                state.otherPlayers[data.id].facing = data.facing; 
+                state.otherPlayers[data.id].isDancing = (data.x > DISCO_X - DISCO_WIDTH/2 && data.x < DISCO_X + DISCO_WIDTH/2); 
+                state.otherPlayers[data.id].isSitting = data.isSitting || false; // Синхронизация сидения
+            } 
+        }
         if (data.type === 'appearanceChanged') { if (state.otherPlayers[data.id] && data.appearance) state.otherPlayers[data.id] = { ...state.otherPlayers[data.id], ...data.appearance }; }
         if (data.type === 'playerLeft') { const p = state.otherPlayers[data.id]; if (p) { addSystemMessage(`${p.nick} вышел`); delete state.otherPlayers[data.id]; updateOnlineDisplay(Object.keys(state.otherPlayers).length + 1); } }
         if (data.type === 'chat') addChatMessage(data.nick, data.text);
@@ -178,9 +194,16 @@
 
     logoutBtn.addEventListener('click', () => { if (ws) { ws.close(); ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
     
+    // ОБРАБОТКА КНОПКИ ВЗАИМОДЕЙСТВИЯ
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') {
           if (typeof window.openWardrobe === 'function') { window.openWardrobe(ws, state); }
+      } else if (state.nearInteract === 'sofa') {
+          state.player.isSitting = !state.player.isSitting;
+          // Отправляем обновление на сервер
+          if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'move', x: state.player.x, y: state.player.y, facing: state.player.facing, isSitting: state.player.isSitting }));
+          }
       }
     });
 
@@ -188,12 +211,24 @@
     function updatePhysics(dt) {
       if (!state.loggedIn) return; const p = state.player; const speed = 4;
       
-      p.vx = 0; 
-      if (state.keys.left) { p.vx = -speed; p.facing = -1; } 
-      if (state.keys.right) { p.vx = speed; p.facing = 1; } 
-      p.x += p.vx;
-      
-      if (p.vx !== 0 && p.onGround) { p.walkTimer += dt; } else { p.walkTimer = 0; }
+      // Если персонаж сидит, он не может ходить и прыгать
+      if (p.isSitting) {
+          p.vx = 0;
+          p.walkTimer = 0;
+          // Проверяем, не отошел ли он от дивана (на случай багов)
+          let stillOnSofa = false;
+          for (let s of SEATS) {
+              if (p.x + p.w/2 > s.x - s.w/2 && p.x + p.w/2 < s.x + s.w/2) stillOnSofa = true;
+          }
+          if (!stillOnSofa) p.isSitting = false;
+      } else {
+          p.vx = 0; 
+          if (state.keys.left) { p.vx = -speed; p.facing = -1; } 
+          if (state.keys.right) { p.vx = speed; p.facing = 1; } 
+          p.x += p.vx;
+          
+          if (p.vx !== 0 && p.onGround) { p.walkTimer += dt; } else { p.walkTimer = 0; }
+      }
 
       if (p.x < 0) p.x = 0; if (p.x + p.w > state.worldWidth) p.x = state.worldWidth - p.w;
       
@@ -201,12 +236,19 @@
       p.vy += 0.55; 
       p.y += p.vy; 
       
-      // Привязка к полу
+      // Коллизия с диванами
+      let onSofa = false;
+      for (let s of SEATS) {
+          if (p.x + p.w > s.x - s.w/2 && p.x < s.x + s.w/2) {
+              if (p.y + 40 >= 0 && p.y + 40 <= 15) { 
+                  p.y = -40; p.vy = 0; p.onGround = true; onSofa = true;
+              }
+          }
+      }
+
       if (p.y >= 0) { 
-          p.y = 0; 
-          p.vy = 0; 
-          p.onGround = true; 
-      } else {
+          p.y = 0; p.vy = 0; p.onGround = true; 
+      } else if (!onSofa) {
           p.onGround = false;
       }
       
@@ -215,25 +257,71 @@
           p.isDancing = onDisco;
           if (onDisco) { p.danceTimer = 0; }
       }
-      
       if (p.isDancing) { p.danceTimer += dt; }
 
       const targetCam = p.x + p.w/2 - canvas.width / 2; state.camera.x += (targetCam - state.camera.x) * 0.15;
       if (state.camera.x < 0) state.camera.x = 0; const maxCam = state.worldWidth - canvas.width; if (state.camera.x > maxCam) state.camera.x = maxCam;
       
       sendTimer += dt * 16.67;
-      if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0; }
+      if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { 
+          ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing, isSitting: p.isSitting })); 
+          lastSentX = p.x; sendTimer = 0; 
+      }
       
       const px = p.x + p.w/2;
-      if (Math.abs(px - WARDROBE_X) < 60) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); } 
-      else { state.nearInteract = null; interactBtn.classList.remove('show'); }
+      state.nearInteract = null;
+      
+      // Проверка на гардероб
+      if (Math.abs(px - WARDROBE_X) < 60) { 
+          state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); 
+      } 
+      // Проверка на диваны
+      else {
+          let nearSofa = false;
+          for (let s of SEATS) {
+              if (Math.abs(px - s.x) < s.w/2 + 20) nearSofa = true;
+          }
+          if (nearSofa) {
+              state.nearInteract = 'sofa'; 
+              interactBtn.textContent = state.player.isSitting ? '🚶 Встать' : '🛋️ Сесть'; 
+              interactBtn.classList.add('show'); 
+          } else {
+              interactBtn.classList.remove('show');
+              if (state.player.isSitting) state.player.isSitting = false; // Автоматически встаем, если отошли
+          }
+      }
       
       state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
     }
 
     function drawFurniture(camX, floorY) {
-      for (let plant of PLANTS) { const px = plant.x - camX; if (px < -100 || px > canvas.width + 100) continue; ctx.fillStyle = '#8b4513'; ctx.beginPath(); ctx.moveTo(px - 15, floorY - 20); ctx.lineTo(px + 15, floorY - 20); ctx.lineTo(px + 10, floorY); ctx.lineTo(px - 10, floorY); ctx.fill(); ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.arc(px, floorY - 35, 20, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px - 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(px + 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); }
-      for (let s of SEATS) { const sx = s.x - camX; if (sx < -150 || sx > canvas.width + 150) continue; if (s.type === 'sofa') { ctx.fillStyle = s.color; ctx.fillRect(sx - s.w/2, floorY - 40, s.w, 40); ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); ctx.fillStyle = '#222'; ctx.fillRect(sx - s.w/2 + 5, floorY - 15, s.w - 10, 15); } }
+      for (let plant of PLANTS) { 
+          const px = plant.x - camX; 
+          if (px < -100 || px > canvas.width + 100) continue; 
+          ctx.fillStyle = '#8b4513'; 
+          ctx.beginPath(); ctx.moveTo(px - 15, floorY - 20); ctx.lineTo(px + 15, floorY - 20); ctx.lineTo(px + 10, floorY); ctx.lineTo(px - 10, floorY); ctx.fill(); 
+          ctx.fillStyle = '#2e8b57'; 
+          ctx.beginPath(); ctx.arc(px, floorY - 35, 20, 0, Math.PI*2); ctx.fill(); 
+          ctx.beginPath(); ctx.arc(px - 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); 
+          ctx.beginPath(); ctx.arc(px + 12, floorY - 25, 15, 0, Math.PI*2); ctx.fill(); 
+      }
+      for (let s of SEATS) { 
+          const sx = s.x - camX; 
+          if (sx < -150 || sx > canvas.width + 150) continue; 
+          if (s.type === 'sofa') { 
+              // Спинка
+              ctx.fillStyle = s.color; 
+              ctx.fillRect(sx - s.w/2, floorY - 50, s.w, 20); 
+              // Сиденье
+              ctx.fillRect(sx - s.w/2, floorY - 30, s.w, 30); 
+              // Подлокотники
+              ctx.fillRect(sx - s.w/2 - 10, floorY - 25, 15, 25); 
+              ctx.fillRect(sx + s.w/2 - 5, floorY - 25, 15, 25); 
+              // Тень
+              ctx.fillStyle = 'rgba(0,0,0,0.3)'; 
+              ctx.fillRect(sx - s.w/2 + 5, floorY, s.w - 10, 5); 
+          } 
+      }
     }
 
     function drawDisco(camX, floorY) {
@@ -252,8 +340,10 @@
     }
 
     function drawBar(camX, floorY) {
-      const bx = BAR_X - camX; if (bx < -200 || bx > canvas.width + 200) return;
-      const tableTop = floorY - 60; // Стол меньше
+      const bx = BAR_X - camX; 
+      if (bx < -200 || bx > canvas.width + 200) return;
+      
+      const tableTop = floorY - 60;
       
       // Бармен
       drawCharacter({ 
@@ -263,9 +353,12 @@
           isDancing: false, walkTimer: 0, danceTimer: 0, petType: 'none', topStyle: 'tshirt', bottomStyle: 'pants', shoesStyle: 'boots', hairStyle: 'straight'
       }, camX, floorY);
 
-      ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 50, tableTop, 120, 60); // Стол меньше
+      // Стол
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 50, tableTop, 120, 60); 
       ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 55, tableTop - 5, 130, 10); 
-      ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 80, 5); ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20); ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
+      ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 80, 5); 
+      ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20); 
+      ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
     }
 
     function drawWardrobe(camX, floorY) {
@@ -287,7 +380,6 @@
       }
     }
 
-    // --- ПОЛНАЯ ОТРИСОВКА ПЕРСОНАЖА ---
     function shadeColor(color, percent) {
         if(!color || color.length < 7) return '#000';
         let R = parseInt(color.substring(1,3),16); let G = parseInt(color.substring(3,5),16); let B = parseInt(color.substring(5,7),16);
@@ -297,25 +389,11 @@
         return "#"+rHex+gHex+bHex;
     }
 
-    // Увеличили масштаб персонажа (было 1.6)
     const CHAR_SCALE = 2.2; 
 
     function drawCharacter(p, camX, floorY) {
       const px = p.x - camX; 
       
-      // Проверяем, сидит ли (только для отрисовки, физика не трогается)
-      let isSitting = false;
-      for (let s of SEATS) {
-          if (p.x + p.w/2 > s.x - s.w/2 && p.x + p.w/2 < s.x + s.w/2) isSitting = true;
-      }
-      
-      // Если персонаж прыгает, он не должен сидеть
-      if (p.y < 0) isSitting = false;
-
-      // Опускаем таз ниже пола, если он сидит
-      let hipY = floorY; 
-      if (isSitting) hipY = floorY - 10; 
-
       ctx.save();
       
       // Тень (всегда на полу)
@@ -323,7 +401,7 @@
       ctx.beginPath(); ctx.ellipse(px + p.w/2, floorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
 
       // Смещаем отрисовку в точку таза
-      ctx.translate(px + p.w/2, hipY + p.y); 
+      ctx.translate(px + p.w/2, floorY + p.y); 
       ctx.scale(CHAR_SCALE, CHAR_SCALE);
       
       let offsetY = 0;
@@ -332,30 +410,30 @@
       let leftHipAngle = 0, rightHipAngle = 0;
       let leftKneeAngle = 0, rightKneeAngle = 0;
 
-      if (p.isDancing) {
-          const cycle = Math.floor(p.danceTimer / 25) % 4; 
-          bodyRotation = Math.sin(p.danceTimer * 0.1) * 0.05; 
-          offsetY = Math.abs(Math.sin(p.danceTimer * 0.15)) * -2;
-
-          const bounce = Math.sin(p.danceTimer * 0.15);
-          // Колени сгибаются ВПЕРЕД (положительный угол)
-          leftKneeAngle = Math.abs(bounce) * 0.3;
-          rightKneeAngle = Math.abs(bounce) * 0.3;
-
-          if (cycle === 0) rightArmAngle = -Math.PI / 3; 
-          else if (cycle === 1) rightArmAngle = Math.PI / 1.5;
-          else if (cycle === 2) leftArmAngle = -Math.PI / 1.5; 
-          else if (cycle === 3) leftArmAngle = Math.PI / 3;
-      } else if (isSitting) {
+      // Если сидит
+      if (p.isSitting) {
           leftHipAngle = Math.PI / 2; 
           rightHipAngle = Math.PI / 2;
           leftKneeAngle = -Math.PI / 2; 
           rightKneeAngle = -Math.PI / 2;
+          leftArmAngle = -0.2; // Руки на коленях
+          rightArmAngle = 0.2;
+      } 
+      else if (p.isDancing) {
+          const cycle = Math.floor(p.danceTimer / 25) % 4; 
+          bodyRotation = Math.sin(p.danceTimer * 0.1) * 0.05; 
+          offsetY = Math.abs(Math.sin(p.danceTimer * 0.15)) * -2;
+          const bounce = Math.sin(p.danceTimer * 0.15);
+          leftKneeAngle = Math.abs(bounce) * 0.3;
+          rightKneeAngle = Math.abs(bounce) * 0.3;
+          if (cycle === 0) rightArmAngle = -Math.PI / 3; 
+          else if (cycle === 1) rightArmAngle = Math.PI / 1.5;
+          else if (cycle === 2) leftArmAngle = -Math.PI / 1.5; 
+          else if (cycle === 3) leftArmAngle = Math.PI / 3;
       } else {
           if (p.walkTimer > 0) {
               const walkCycle = Math.sin(p.walkTimer * 0.25); 
               offsetY = Math.abs(walkCycle) * -2; 
-              // Колени сгибаются ВПЕРЕД
               leftHipAngle = walkCycle * 0.4;
               rightHipAngle = -walkCycle * 0.4;
               leftKneeAngle = walkCycle > 0 ? 0.4 : 0;
@@ -380,7 +458,6 @@
           ctx.restore();
       };
 
-      // Точка таза для ног
       drawLeg(-5, offsetY, leftHipAngle, leftKneeAngle);
       drawLeg(5, offsetY, rightHipAngle, rightKneeAngle);
 
@@ -389,10 +466,9 @@
       ctx.translate(0, offsetY);
       
       if (p.isDancing) ctx.rotate(bodyRotation);
-      if (isSitting) ctx.rotate(0.2); 
+      if (p.isSitting) ctx.rotate(0.1); 
 
       const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cShirt = p.colorShirt || '#7a3cff', cPants = p.colorPants || '#1a1a1a', hType = p.hatType || 'none', hColor = p.hatColor || '#1a1a1a', isFemale = p.gender === 'female';
-      const shoulderW = isFemale ? 14 : 16;
       
       // Тело
       ctx.fillStyle = cSkin; ctx.fillRect(-8, -18, 16, 18); 
@@ -440,7 +516,7 @@
       ctx.fillStyle = cSkin; 
       ctx.fillRect(-9, -20, 18, 20);
       
-      // Глаза (теперь зависят от facing)
+      // Глаза
       const eyeOffset = p.facing === 1 ? 2 : 0; 
       if (p.colorEyes === '❤️') {
         ctx.fillStyle = '#ff0000'; ctx.fillRect(-6 + eyeOffset, -14, 5, 6); ctx.fillRect(1 + eyeOffset, -14, 5, 6);
@@ -501,7 +577,6 @@
       
       for (let id in state.otherPlayers) { 
           const other = state.otherPlayers[id];
-          for (let s of SEATS) { if (other.x + 12 > s.x - s.w/2 && other.x + 12 < s.x + s.w/2) other.isSitting = true; }
           drawCharacter(other, camX, floorY); 
       }
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
@@ -528,9 +603,9 @@
     btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.left = true; }, {passive: false}); btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); state.keys.left = false; }, {passive: false});
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.right = true; }, {passive: false}); btnRight.addEventListener('touchend', (e) => { e.preventDefault(); state.keys.right = false; }, {passive: false});
     btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); tryJump(); }, {passive: false});
-    function tryJump() { if (state.player.onGround) { state.player.vy = JUMP_FORCE; state.player.onGround = false; } }
+    function tryJump() { if (state.player.onGround && !state.player.isSitting) { state.player.vy = JUMP_FORCE; state.player.onGround = false; } }
   </script>
   
   <script src="wardrobe.js"></script>
 </body>
-                                                                                         </html>
+  </html>
