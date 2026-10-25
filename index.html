@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Door Circus - Halloween</title>
-  <link rel="stylesheet" href="wardrobe.css">
+  <title>Door Circus - v1.1.1</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
     .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
     .screen.active { display: flex; }
+    
     #loginScreen { align-items: center; justify-content: center; background: radial-gradient(circle at 50% 20%, #2a1040 0%, #0a0a12 80%); z-index: 50; }
-    .login-box { width: 90%; max-width: 420px; padding: 30px 24px; background: rgba(15, 10, 25, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(122, 60, 255, 0.4); border-radius: 20px; box-shadow: 0 0 30px rgba(122, 60, 255, 0.2); text-align: center; }
+    .login-box { width: 90%; max-width: 420px; padding: 30px 24px; background: rgba(15, 10, 25, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(122, 60, 255, 0.4); border-radius: 20px; box-shadow: 0 0 30px rgba(122, 60, 255, 0.2); text-align: center; position: relative; }
+    .version-tag { position: absolute; top: 10px; right: 15px; font-size: 12px; color: #7a3cff; font-weight: bold; }
     .title-glow h1 { font-size: 32px; color: #ff6ad5; text-shadow: 0 0 10px #ff6ad5, 0 0 20px #ff6ad5; letter-spacing: 2px; margin-bottom: 8px; }
     .subtitle { font-size: 14px; color: #9a8cc0; margin-bottom: 20px; text-transform: uppercase; }
     .input-frame { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(122, 60, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -19,10 +20,9 @@
     .input-frame input:focus { border-color: #ff6ad5; box-shadow: 0 0 10px rgba(255, 106, 213, 0.5); }
     .login-box button { width: 100%; padding: 16px; background: linear-gradient(135deg, #7a3cff, #ff6ad5); border: none; border-radius: 10px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
     .error { color: #ff5566; font-size: 13px; margin-top: 15px; min-height: 18px; }
+
     #lobbyScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; overflow: hidden; }
-    
-    /* Мягкое сглаживание вместо резкого pixelated */
-    #gameCanvas { width: 100%; height: 100%; display: block; }
+    #gameCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     
     #hud { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; }
     .top-left-panel { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -31,12 +31,15 @@
     .top-right-panel { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
+    
     #interactBtn { position: absolute; top: 20%; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; }
     #interactBtn.show { display: block; }
+    
     #controls { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 10; }
     .move-btns { display: flex; gap: 15px; pointer-events: auto; }
     #controls button { width: 70px; height: 70px; border-radius: 50%; background: rgba(20, 10, 35, 0.6); border: 2px solid rgba(122, 60, 255, 0.8); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
     #btnJump { pointer-events: auto; width: 85px; height: 85px; border-color: rgba(255, 106, 213, 0.8); }
+    
     #chatPanel { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 350px; background: #0e0a18; border-left: 2px solid #4a3a70; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s; z-index: 20; }
     #chatPanel.open { transform: translateX(0); }
     .chat-header { padding: 15px; background: #150a25; border-bottom: 1px solid #2a2040; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #ff6ad5; }
@@ -52,6 +55,7 @@
 <body>
   <div id="loginScreen" class="screen active">
     <div class="login-box">
+      <div class="version-tag">v1.1.1</div>
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
       <p class="subtitle">Войди в цирк дверей</p>
       <div class="input-frame">
@@ -88,6 +92,7 @@
       </div>
     </div>
   </div>
+  
   <div id="wardrobeContainer"></div>
 
   <script>
@@ -96,7 +101,6 @@
     const SEATS = [ { id: 'sofa1', x: 2600, w: 120, color: '#8b0000', type: 'sofa' }, { id: 'sofa2', x: 2800, w: 120, color: '#ff8c00', type: 'sofa' } ];
     const PLANTS = [ { x: 300 }, { x: 650 }, { x: 2400 }, { x: 3000 } ];
     const DISCO_X = 3600; const DISCO_WIDTH = 300; const JUMP_FORCE = -9; 
-    
     const BAR_TABLE = { x: BAR_X - 60, y: 0, w: 150, h: 45 };
 
     const state = {
@@ -114,7 +118,6 @@
     const $ = (id) => document.getElementById(id);
     const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn');
     
-    // Отключаем сглаживание (чтобы не было размытия)
     ctx.imageSmoothingEnabled = false;
     
     let ws = null;
@@ -153,7 +156,7 @@
     });
 
     logoutBtn.addEventListener('click', () => { if (ws) { ws.close(); ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
-    
+
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe' && typeof window.openWardrobe === 'function') { window.openWardrobe(ws, state); }
     });
@@ -225,33 +228,28 @@
       
       const tableTop = floorY - BAR_TABLE.h;
       
-      // Усатый бармен
       const npcBob = Math.sin(state.time * 0.08) * 2;
       ctx.save();
       ctx.translate(bx, tableTop + 15 + npcBob); 
       ctx.scale(2, 2);
       
-      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-8, -18, 16, 18); // Смокинг
-      ctx.fillStyle = '#fff'; ctx.fillRect(-4, -18, 8, 12); // Рубашка
-      ctx.fillStyle = '#000'; ctx.fillRect(-1, -16, 2, 6); // Галстук
-      ctx.fillStyle = '#f1c27d'; ctx.fillRect(-9, -14, 3, 14); ctx.fillRect(6, -14, 3, 14); // Руки
-      
-      // Голова
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-8, -18, 16, 18);
+      ctx.fillStyle = '#fff'; ctx.fillRect(-4, -18, 8, 12);
+      ctx.fillStyle = '#000'; ctx.fillRect(-1, -16, 2, 6);
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(-9, -14, 3, 14); ctx.fillRect(6, -14, 3, 14);
       ctx.fillStyle = '#f1c27d'; ctx.fillRect(-7, -34, 14, 16); 
-      ctx.fillStyle = '#333'; ctx.fillRect(-7, -34, 14, 4); // Волосы
-      ctx.fillStyle = '#333'; ctx.fillRect(-5, -26, 10, 2); // Усы
+      ctx.fillStyle = '#333'; ctx.fillRect(-7, -34, 14, 4);
+      ctx.fillStyle = '#333'; ctx.fillRect(-5, -26, 10, 2);
       ctx.fillStyle = '#fff'; ctx.fillRect(-5, -31, 4, 4); ctx.fillRect(1, -31, 4, 4);
       ctx.fillStyle = '#000'; ctx.fillRect(-4, -30, 2, 2); ctx.fillRect(2, -30, 2, 2);
       
       ctx.restore();
 
-      // Стойка
       ctx.fillStyle = '#3e2723'; 
       ctx.fillRect(bx - BAR_TABLE.w/2, tableTop, BAR_TABLE.w, BAR_TABLE.h); 
       ctx.fillStyle = '#5d4037'; 
       ctx.fillRect(bx - BAR_TABLE.w/2 - 5, tableTop - 5, BAR_TABLE.w + 10, 10); 
       
-      // Бокалы
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; 
       ctx.fillRect(bx - 30, tableTop - 20, 10, 15); 
       ctx.fillRect(bx + 20, tableTop - 20, 10, 15); 
@@ -307,7 +305,6 @@
           }
       }
 
-      // НОГИ (цельные)
       ctx.fillStyle = p.colorPants; 
       ctx.fillRect(-7, 0 + leftLegY, 6, 18); 
       ctx.fillRect(1, 0 + rightLegY, 6, 18); 
@@ -318,7 +315,6 @@
       ctx.save(); ctx.translate(0, offsetY);
       const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cShirt = p.colorShirt || '#7a3cff', isFemale = p.gender === 'female';
       
-      // Тело
       ctx.fillStyle = cSkin; ctx.fillRect(-8, -18, 16, 18); 
       ctx.fillStyle = 'rgba(0,0,0,0.15)'; if (isFemale) { ctx.fillRect(-6, -18, 12, 2); ctx.fillRect(-1, -16, 2, 6); } else { ctx.fillRect(-6, -18, 12, 2); }
       ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-1, -2, 2, 2);
@@ -330,14 +326,11 @@
       else if (p.topStyle === 'dress') { ctx.fillRect(-9, -18, 18, 14); ctx.fillStyle = '#ff0000'; ctx.fillRect(-9, -6, 18, 2); ctx.fillStyle = cShirt; ctx.beginPath(); ctx.moveTo(-9, -4); ctx.lineTo(9, -4); ctx.lineTo(16, 13); ctx.lineTo(-16, 13); ctx.fill(); ctx.fillRect(-8, -18, 4, 8); ctx.fillRect(4, -18, 4, 8); } 
       else if (p.topStyle === 'tank_top') { ctx.fillStyle = cShirt; ctx.fillRect(-8, -15, 16, 6); ctx.fillRect(-8, -18, 2, 3); ctx.fillRect(6, -18, 2, 3); }
 
-      // Руки
       ctx.save(); ctx.translate(-8, -14); ctx.rotate(leftArmAngle); ctx.fillStyle = cSkin; ctx.fillRect(-5, 0, 5, 15); ctx.restore();
       ctx.save(); ctx.translate(8, -14); ctx.rotate(rightArmAngle); ctx.fillStyle = cSkin; ctx.fillRect(0, 0, 5, 15); ctx.restore();
 
-      // Голова
       ctx.translate(0, -18); ctx.fillStyle = cSkin; ctx.fillRect(-9, -20, 18, 20);
       
-      // ГЛАЗА (с морганием, нейтральное лицо)
       const eyeOffset = p.facing === 1 ? 2 : -2; 
       if (state.isBlinking) {
         ctx.fillStyle = '#000'; ctx.fillRect(-6 + eyeOffset, -12, 5, 1); ctx.fillRect(1 + eyeOffset, -12, 5, 1);
@@ -346,16 +339,13 @@
         else { ctx.fillStyle = '#fff'; ctx.fillRect(-6 + eyeOffset, -14, 5, 6); ctx.fillRect(1 + eyeOffset, -14, 5, 6); ctx.fillStyle = p.colorEyes || '#000'; ctx.fillRect(-4 + eyeOffset, -12, 2, 3); ctx.fillRect(3 + eyeOffset, -12, 2, 3); }
         if (isFemale) { ctx.fillStyle = '#000'; ctx.fillRect(-7 + eyeOffset, -15, 6, 1); ctx.fillRect(0 + eyeOffset, -15, 6, 1); }
       }
-      // Нейтральный рот (просто линия)
       ctx.fillStyle = '#000'; ctx.fillRect(-3 + eyeOffset, -5, 6, 1); 
 
-      // ВОЛОСЫ (увеличенные)
       if (p.hairStyle !== 'bald') {
         const hairShift = p.facing === 1 ? 1 : -1;
         if (p.hairStyle === 'braid') { const hx = isFemale ? 10 : 12; const hairDark = shadeColor(cHair, -30); const hairLight = shadeColor(cHair, 30); ctx.fillStyle = cHair; ctx.fillRect(hx, -14, 6, 22); ctx.fillStyle = hairDark; for(let i=0; i<6; i++) { ctx.fillRect(hx, -12 + i*4, 6, 2); } ctx.fillStyle = hairLight; for(let i=0; i<5; i++) { ctx.fillRect(hx + 2, -10 + i*4, 2, 2); } ctx.fillStyle = '#ff0000'; ctx.fillRect(hx + 1, 8, 4, 2); } 
         else { 
             ctx.fillStyle = cHair; 
-            // Увеличили прическу на пару пикселей
             if (isFemale) { ctx.fillRect(-12 + hairShift, -22, 24, 10); ctx.fillRect(-13 + hairShift, -12, 4, 14); ctx.fillRect(9 + hairShift, -12, 4, 14); } 
             else { ctx.fillRect(-10 + hairShift, -22, 20, 8); } 
             if (p.hairStyle === 'curly') { 
@@ -367,13 +357,11 @@
         }
       }
 
-      // Шляпы (СМЕЩАЮТСЯ ПРИ ХОДЬБЕ)
       const hatShift = p.facing === 1 ? 1 : -1;
       if (p.hatType === 'cap') { ctx.fillStyle = p.hatColor; ctx.fillRect(-10 + hatShift, -23, 20, 6); ctx.fillRect(5 + hatShift, -20, 8, 3); ctx.fillStyle = '#ffd700'; ctx.fillRect(-5 + hatShift, -22, 3, 2); ctx.fillRect(0 + hatShift, -22, 3, 2); } 
       else if (p.hatType === 'straw') { ctx.fillStyle = p.hatColor; ctx.fillRect(-14 + hatShift, -20, 28, 4); ctx.fillRect(-7 + hatShift, -25, 14, 6); ctx.fillStyle = '#ff0000'; ctx.fillRect(-7 + hatShift, -21, 14, 2); } 
       else if (p.hatType === 'mask') { ctx.fillStyle = p.hatColor; ctx.beginPath(); ctx.moveTo(-10 + hatShift, -16); ctx.lineTo(10 + hatShift, -16); ctx.lineTo(8 + hatShift, 0); ctx.lineTo(6 + hatShift, 2); ctx.lineTo(-6 + hatShift, 2); ctx.lineTo(-8 + hatShift, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.moveTo(0 + hatShift, -16); ctx.quadraticCurveTo(-2 + hatShift, -10, 0 + hatShift, -4); ctx.quadraticCurveTo(2 + hatShift, -10, 0 + hatShift, -16); ctx.fill(); ctx.beginPath(); ctx.moveTo(-6 + hatShift, -14); ctx.lineTo(-2 + hatShift, -8); ctx.lineTo(-4 + hatShift, -6); ctx.lineTo(-8 + hatShift, -12); ctx.fill(); ctx.beginPath(); ctx.moveTo(6 + hatShift, -14); ctx.lineTo(2 + hatShift, -8); ctx.lineTo(4 + hatShift, -6); ctx.lineTo(8 + hatShift, -12); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(-6 + hatShift, -4, 12, 5); ctx.fillStyle = '#000000'; for(let i=-6; i<6; i+=3) { ctx.fillRect(i + hatShift, -4, 1, 5); } }
 
-      // ПИТОМЦЫ
       if (p.petType !== 'none') {
           let petX = (p.facing === 1 ? 22 : -22); 
           let petY = 0; 
