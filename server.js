@@ -4,33 +4,26 @@ const path = require('path');
 const WebSocket = require('ws');
 
 const SUPABASE_URL = 'https://hyutxzmomdppfiztwajl.supabase.co';
+// Ключ хранится только здесь, на сервере!
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_secret_XIM-_dWp5LWadVvYNgRQmQ_-HEYiZv1';
 
 const server = http.createServer((req, res) => {
-    // Обработка сохранения скина напрямую
     if (req.method === 'POST' && req.url === '/saveSkin') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
             try {
                 const data = JSON.parse(body);
-                await fetchSupabase(`players?nick=eq.${data.nick.toLowerCase()}`, 'PATCH', { 
-                    appearance: data.appearance 
-                });
+                await fetchSupabase(`players?nick=eq.${data.nick.toLowerCase()}`, 'PATCH', { appearance: data.appearance });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
-            } catch (e) {
-                res.writeHead(500);
-                res.end(JSON.stringify({ error: e.message }));
-            }
+            } catch (e) { res.writeHead(500); res.end(JSON.stringify({ error: e.message })); }
         });
         return;
     }
 
-    // ЛОГИКА РАЗДАЧИ ФАЙЛОВ
     const urlPath = req.url.split('?')[0];
     let filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
-    
     const extname = path.extname(filePath);
     let contentType = 'text/html';
     if (extname === '.js') contentType = 'text/javascript';
@@ -87,19 +80,21 @@ wss.on('connection', (ws) => {
                     isSitting: false, coins: saved.coins || 0 
                 };
                 
-                // Отправляем успех + количество людей онлайн
+                // Считаем онлайн ПОСЛЕ добавления игрока
+                const totalOnline = Object.keys(players).length;
+
                 ws.send(JSON.stringify({ 
                     type: 'authSuccess', 
                     player: players[id], 
                     others: Object.values(players).filter(p => p.id !== id),
-                    totalOnline: Object.keys(players).length
+                    totalOnline: totalOnline
                 }));
-                broadcast({ type: 'playerJoined', player: players[id], totalOnline: Object.keys(players).length }, ws);
+
+                broadcast({ type: 'playerJoined', player: players[id], totalOnline: totalOnline }, ws);
             }
 
             if (data.type === 'move' && id && players[id]) {
                 players[id].x = data.x; players[id].y = data.y; players[id].facing = data.facing; players[id].isSitting = data.isSitting;
-                // Не сохраняем каждое движение в базу, чтобы не спамить
                 broadcast({ type: 'playerMoved', id: id, x: data.x, y: data.y, facing: data.facing, isSitting: data.isSitting }, ws);
             }
 
@@ -123,7 +118,8 @@ wss.on('connection', (ws) => {
                 }).catch(e => console.log(e));
             }
             delete players[id];
-            broadcast({ type: 'playerLeft', id: id, totalOnline: Object.keys(players).length }, null);
+            const totalOnline = Object.keys(players).length;
+            broadcast({ type: 'playerLeft', id: id, totalOnline: totalOnline }, null);
         }
     });
 });
