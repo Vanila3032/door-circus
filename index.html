@@ -63,6 +63,8 @@
 </head>
 <body>
 
+  <!-- Музыка временно убрана -->
+  
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
@@ -131,6 +133,18 @@
     const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), wardrobeBtn = $('wardrobeBtn'), toast = $('toast');
     let ws = null;
 
+    // АВТОВХОД ИЗ ГАРДЕРОБА
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlNick = urlParams.get('nick');
+    const urlPass = urlParams.get('pass');
+    
+    if (urlNick && urlPass) {
+        nickInput.value = urlNick;
+        passInput.value = urlPass;
+        // Ждем чуть-чуть, чтобы страница прогрузилась, и нажимаем Войти
+        setTimeout(() => { loginBtn.click(); }, 200);
+    }
+
     function connectToServer() {
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       ws = new WebSocket(`${protocol}${window.location.host}`);
@@ -164,8 +178,10 @@
     logoutBtn.addEventListener('click', () => { if (ws) ws.close(); state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
     
     wardrobeBtn.addEventListener('click', () => {
-        window.location.href = '/wardrobe.html?nick=' + state.nick;
+        window.location.href = '/wardrobe.html?nick=' + state.nick + '&pass=' + passInput.value;
     });
+
+    function showToast(text) { toast.textContent = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
 
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
@@ -189,7 +205,6 @@
       
       if (p.isDancing) {
           p.danceTimer += dt;
-          // Меняем танец каждые 3 секунды (180 кадров)
           if (p.danceTimer > 180) { p.danceTimer = 0; p.danceType = Math.floor(Math.random() * 4); }
       }
 
@@ -213,7 +228,6 @@
       const dx = DISCO_X - camX; if (dx < -300 || dx > canvas.width + 300) return;
       const tile = 40; const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile; const endX = startX + DISCO_WIDTH + tile;
       
-      // Танцпол
       for (let x = startX; x < endX; x += tile) { 
         const sx = x - camX; 
         if (sx < -tile || sx > canvas.width + tile) continue; 
@@ -222,7 +236,6 @@
         ctx.fillRect(sx, floorY, tile, canvas.height - floorY); 
       }
 
-      // Крутые колонки
       const speakerY = floorY - 70;
       const drawSpeaker = (sx) => {
         ctx.fillStyle = '#111';
@@ -230,7 +243,6 @@
         ctx.fillStyle = '#333';
         ctx.fillRect(sx - 12, speakerY + 5, 24, 20);
         ctx.fillRect(sx - 12, speakerY + 30, 24, 20);
-        // Динамики с бликом
         ctx.fillStyle = '#555';
         ctx.beginPath(); ctx.arc(sx, speakerY + 15, 8, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(sx, speakerY + 40, 8, 0, Math.PI*2); ctx.fill();
@@ -241,12 +253,10 @@
       drawSpeaker(dx - 120);
       drawSpeaker(dx + 120);
 
-      // Реалистичный шар
       const ballY = floorY - 300 + Math.sin(state.time * 0.05) * 10; 
       ctx.fillStyle = '#555'; ctx.fillRect(dx - 1, 0, 2, ballY); 
       
       ctx.save(); ctx.translate(dx, ballY); 
-      // Свет
       ctx.globalCompositeOperation = 'screen';
       for(let i=0; i<6; i++){ 
         ctx.save(); ctx.rotate(state.time*0.03 + i * (Math.PI*2/6)); 
@@ -259,7 +269,6 @@
       }
       ctx.globalCompositeOperation = 'source-over';
       
-      // Сам шар (сетка)
       ctx.fillStyle = '#ddd';
       ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = '#999';
@@ -268,7 +277,7 @@
          ctx.fillRect(-25, i*10 - 2, 50, 4);
       }
       ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-8, -8, 5, 0, Math.PI*2); ctx.fill(); // Блик
+      ctx.beginPath(); ctx.arc(-8, -8, 5, 0, Math.PI*2); ctx.fill(); 
 
       ctx.restore();
     }
@@ -280,25 +289,22 @@
       const tableTop = floorY - BAR_TABLE.h; 
       const tableHeight = 100;
       
-      // Бармен (за стойкой)
       const npcBob = Math.sin(state.time * 0.05) * 2;
       ctx.save(); ctx.translate(bx, tableTop - 50 + npcBob); ctx.scale(1.6, 1.6);
       ctx.fillStyle = '#1a1a1a'; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18);
       ctx.fillStyle = '#000000'; ctx.fillRect(4, 24, 16, 18);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 24, 8, 12); ctx.fillStyle = '#000000'; ctx.fillRect(11, 24, 2, 10); // Фартук
-      ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); // Руки
-      ctx.fillRect(3, 0, 18, 20); // Лицо
-      ctx.fillStyle = '#3a2050'; ctx.fillRect(3, 0, 18, 6); // Волосы
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 24, 8, 12); ctx.fillStyle = '#000000'; ctx.fillRect(11, 24, 2, 10);
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16);
+      ctx.fillRect(3, 0, 18, 20);
+      ctx.fillStyle = '#3a2050'; ctx.fillRect(3, 0, 18, 6);
       ctx.fillStyle = '#fff'; ctx.fillRect(6, 6, 5, 6); ctx.fillRect(13, 6, 5, 6);
       ctx.fillStyle = '#000'; ctx.fillRect(8, 8, 2, 3); ctx.fillRect(15, 8, 2, 3);
-      ctx.fillStyle = '#000'; ctx.fillRect(7, 15, 10, 2); // Улыбка
+      ctx.fillStyle = '#000'; ctx.fillRect(7, 15, 10, 2);
       ctx.restore();
 
-      // Стойка
       ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 60, tableTop, 150, tableHeight); 
       ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 65, tableTop - 5, 160, 10); 
       
-      // Бутылки на полке
       ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 100, 5);
       ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20);
       ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
@@ -320,24 +326,19 @@
         const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue; 
         const dh = 140, dw = 80, dy = floorY - dh, dxPos = dx - dw/2;
         
-        // Рама
         ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); 
-        // Дверь
         ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
         
-        // Доски крест-накрест (с тенями)
         ctx.fillStyle = '#4a3020'; 
         ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
         ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
 
-        // Заклепки
         ctx.fillStyle = '#888';
         ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
 
-        // Табличка
         ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25);
         ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25);
         ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
@@ -352,12 +353,11 @@
       ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
       ctx.translate(px, py);
       
-      // Танцы
       if (p.isDancing) { 
-         if (p.danceType === 0) ctx.translate(0, Math.sin(state.time * 0.5) * 8); // Прыжки
-         if (p.danceType === 1) { ctx.rotate(Math.sin(state.time * 0.2) * 0.1); ctx.translate(0, Math.sin(state.time * 0.5) * 4); } // Кручение
-         if (p.danceType === 2) ctx.translate(Math.sin(state.time * 0.5) * 4, 0); // Качание влево-вправо
-         if (p.danceType === 3) ctx.translate(0, Math.sin(state.time * 0.8) * 6); // Быстрые подпрыгивания
+         if (p.danceType === 0) ctx.translate(0, Math.sin(state.time * 0.5) * 8); 
+         if (p.danceType === 1) { ctx.rotate(Math.sin(state.time * 0.2) * 0.1); ctx.translate(0, Math.sin(state.time * 0.5) * 4); } 
+         if (p.danceType === 2) ctx.translate(Math.sin(state.time * 0.5) * 4, 0); 
+         if (p.danceType === 3) ctx.translate(0, Math.sin(state.time * 0.8) * 6); 
       } else if (p.vx === 0 && p.onGround) { 
          ctx.translate(0, Math.sin(state.time * 0.1) * 1.5); 
       }
@@ -380,12 +380,10 @@
       
       ctx.fillStyle = cSkin; ctx.fillRect(3, 0, 18, 20);
       
-      // Глаза и поворот
       const eyeOffset = p.facing === 1 ? 2 : 0; 
       ctx.fillStyle = '#fff'; ctx.fillRect(6 + eyeOffset, 6, 5, 6); ctx.fillRect(13 + eyeOffset, 6, 5, 6);
       ctx.fillStyle = '#000'; ctx.fillRect(8 + eyeOffset, 8, 2, 3); ctx.fillRect(15 + eyeOffset, 8, 2, 3);
       
-      // Улыбка
       ctx.fillStyle = '#000'; ctx.fillRect(9 + eyeOffset, 15, 6, 2);
 
       ctx.fillStyle = cHair; 
@@ -452,4 +450,4 @@
     function tryJump() { if (state.player.onGround) { state.player.vy = -11; state.player.onGround = false; } }
   </script>
 </body>
-                                </html>
+                               </html>
