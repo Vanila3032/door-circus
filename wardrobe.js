@@ -1,9 +1,10 @@
 const canvas = document.getElementById('previewCanvas');
 const ctx = canvas.getContext('2d');
 
-// Получаем ник из URL
+// Получаем ник и пароль из URL
 const urlParams = new URLSearchParams(window.location.search);
 const currentNick = urlParams.get('nick') || 'Unknown';
+const currentPass = urlParams.get('pass') || '123'; // Запоминаем пароль
 
 const state = {
   time: 0, isBlinking: false,
@@ -140,11 +141,14 @@ document.getElementById('closePanelBtn').addEventListener('click', () => {
 openCategory('body');
 
 document.getElementById('closeWardrobeBtn').addEventListener('click', () => {
-  window.location.href = '/index.html?nick=' + currentNick;
+  window.location.href = '/index.html?nick=' + currentNick + '&pass=' + currentPass;
 });
 
 // СОХРАНЕНИЕ СКИНА НА СЕРВЕР
 document.getElementById('wearBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('wearBtn');
+  btn.textContent = "Сохранение...";
+  
   try {
     const response = await fetch('/saveSkin', {
       method: 'POST',
@@ -152,12 +156,18 @@ document.getElementById('wearBtn').addEventListener('click', async () => {
       body: JSON.stringify({ nick: currentNick, appearance: state.player })
     });
     
-    if (response.ok) { console.log("Скин успешно сохранен!"); } 
-    else { console.error("Ошибка сохранения"); }
+    if (response.ok) {
+        // Возвращаемся в лобби с ником и паролем
+        window.location.href = '/index.html?nick=' + currentNick + '&pass=' + currentPass;
+    } else {
+        alert("Ошибка сервера. Попробуйте еще раз.");
+        btn.textContent = "Надеть";
+    }
   } catch (e) {
     console.error("Ошибка сети:", e);
+    alert("Ошибка сети.");
+    btn.textContent = "Надеть";
   }
-  window.location.href = '/index.html?nick=' + currentNick;
 });
 
 
