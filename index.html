@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Door Circus - Halloween</title>
+  <link rel="stylesheet" href="wardrobe.css">
   <style>
+    /* ОСНОВНЫЕ СТИЛИ ЛОББИ */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
     .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
@@ -34,8 +36,8 @@
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
     
-    #wardrobeBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); display: none; }
-    #wardrobeBtn.show { display: block; animation: pulse 1.5s infinite; }
+    #interactBtn { position: absolute; top: 70px; right: 15px; background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 0 15px rgba(255, 106, 213, 0.6); }
+    #interactBtn.show { display: block; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     #controls { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 10; }
@@ -63,8 +65,6 @@
 </head>
 <body>
 
-  <!-- Музыка временно убрана -->
-  
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <div class="title-glow"><h1>🎪 Door Circus</h1></div>
@@ -92,7 +92,7 @@
       </div>
     </div>
     
-    <button id="wardrobeBtn">👗 Гардероб</button>
+    <button id="interactBtn">Действие</button>
 
     <div id="controls">
       <div class="move-btns">
@@ -112,6 +112,9 @@
     </div>
   </div>
 
+  <!-- Сюда подгрузится гардероб -->
+  <div id="wardrobeContainer"></div>
+
   <script>
     const DOORS = [ { id: 'draw', x: 1200 }, { id: 'race', x: 1700 }, { id: 'jump', x: 2200 }, { id: 'jojo', x: 2700 }, { id: 'tadc', x: 3200 } ];
     const WARDROBE_X = 800;
@@ -130,20 +133,8 @@
     };
 
     const $ = (id) => document.getElementById(id);
-    const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), wardrobeBtn = $('wardrobeBtn'), toast = $('toast');
+    const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn'), toast = $('toast');
     let ws = null;
-
-    // АВТОВХОД ИЗ ГАРДЕРОБА
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlNick = urlParams.get('nick');
-    const urlPass = urlParams.get('pass');
-    
-    if (urlNick && urlPass) {
-        nickInput.value = urlNick;
-        passInput.value = urlPass;
-        // Ждем чуть-чуть, чтобы страница прогрузилась, и нажимаем Войти
-        setTimeout(() => { loginBtn.click(); }, 200);
-    }
 
     function connectToServer() {
       const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -175,13 +166,16 @@
       connectToServer(); setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
     });
 
-    logoutBtn.addEventListener('click', () => { if (ws) ws.close(); state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
+    logoutBtn.addEventListener('click', () => { if (ws) { ws.close(); ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); chatPanel.classList.remove('open'); });
     
-    wardrobeBtn.addEventListener('click', () => {
-        window.location.href = '/wardrobe.html?nick=' + state.nick + '&pass=' + passInput.value;
+    // ВЫЗОВ ГАРДЕРОБА ЧЕРЕЗ ОВЕРЛЕЙ (функция openWardrobe будет в wardrobe.js)
+    interactBtn.addEventListener('click', () => {
+      if (state.nearInteract === 'wardrobe') {
+          if (typeof window.openWardrobe === 'function') {
+              window.openWardrobe(ws, state); // Передаем сокет и стейт в гардероб
+          }
+      }
     });
-
-    function showToast(text) { toast.textContent = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
 
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
@@ -203,10 +197,7 @@
           if (onDisco) { p.danceTimer = 0; p.danceType = Math.floor(Math.random() * 4); }
       }
       
-      if (p.isDancing) {
-          p.danceTimer += dt;
-          if (p.danceTimer > 180) { p.danceTimer = 0; p.danceType = Math.floor(Math.random() * 4); }
-      }
+      if (p.isDancing) { p.danceTimer += dt; if (p.danceTimer > 180) { p.danceTimer = 0; p.danceType = Math.floor(Math.random() * 4); } }
 
       const targetCam = p.x + p.w/2 - canvas.width / 2; state.camera.x += (targetCam - state.camera.x) * 0.15;
       if (state.camera.x < 0) state.camera.x = 0; const maxCam = state.worldWidth - canvas.width; if (state.camera.x > maxCam) state.camera.x = maxCam;
@@ -214,7 +205,8 @@
       if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0; }
       
       const px = p.x + p.w/2;
-      if (Math.abs(px - WARDROBE_X) < 60) { wardrobeBtn.classList.add('show'); } else { wardrobeBtn.classList.remove('show'); }
+      if (Math.abs(px - WARDROBE_X) < 60) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); } 
+      else { state.nearInteract = null; interactBtn.classList.remove('show'); }
       
       state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
     }
@@ -227,196 +219,94 @@
     function drawDisco(camX, floorY) {
       const dx = DISCO_X - camX; if (dx < -300 || dx > canvas.width + 300) return;
       const tile = 40; const startX = Math.floor((DISCO_X - DISCO_WIDTH/2) / tile) * tile; const endX = startX + DISCO_WIDTH + tile;
-      
-      for (let x = startX; x < endX; x += tile) { 
-        const sx = x - camX; 
-        if (sx < -tile || sx > canvas.width + tile) continue; 
-        const hue = (state.time * 5 + x) % 360; 
-        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`; 
-        ctx.fillRect(sx, floorY, tile, canvas.height - floorY); 
-      }
-
+      for (let x = startX; x < endX; x += tile) { const sx = x - camX; if (sx < -tile || sx > canvas.width + tile) continue; const hue = (state.time * 5 + x) % 360; ctx.fillStyle = `hsl(${hue}, 100%, 50%)`; ctx.fillRect(sx, floorY, tile, canvas.height - floorY); }
       const speakerY = floorY - 70;
-      const drawSpeaker = (sx) => {
-        ctx.fillStyle = '#111';
-        ctx.fillRect(sx - 15, speakerY, 30, 70);
-        ctx.fillStyle = '#333';
-        ctx.fillRect(sx - 12, speakerY + 5, 24, 20);
-        ctx.fillRect(sx - 12, speakerY + 30, 24, 20);
-        ctx.fillStyle = '#555';
-        ctx.beginPath(); ctx.arc(sx, speakerY + 15, 8, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(sx, speakerY + 40, 8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#222';
-        ctx.beginPath(); ctx.arc(sx, speakerY + 15, 4, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(sx, speakerY + 40, 4, 0, Math.PI*2); ctx.fill();
-      };
-      drawSpeaker(dx - 120);
-      drawSpeaker(dx + 120);
-
-      const ballY = floorY - 300 + Math.sin(state.time * 0.05) * 10; 
-      ctx.fillStyle = '#555'; ctx.fillRect(dx - 1, 0, 2, ballY); 
-      
-      ctx.save(); ctx.translate(dx, ballY); 
-      ctx.globalCompositeOperation = 'screen';
-      for(let i=0; i<6; i++){ 
-        ctx.save(); ctx.rotate(state.time*0.03 + i * (Math.PI*2/6)); 
-        const grad = ctx.createLinearGradient(0, 0, 0, 500); 
-        grad.addColorStop(0, 'rgba(255,255,255,0.2)'); 
-        grad.addColorStop(1, 'rgba(255,255,255,0)'); 
-        ctx.fillStyle = grad; 
-        ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-80, 500); ctx.lineTo(80, 500); ctx.lineTo(5, 0); ctx.fill(); 
-        ctx.restore(); 
-      }
+      const drawSpeaker = (sx) => { ctx.fillStyle = '#111'; ctx.fillRect(sx - 15, speakerY, 30, 70); ctx.fillStyle = '#333'; ctx.fillRect(sx - 12, speakerY + 5, 24, 20); ctx.fillRect(sx - 12, speakerY + 30, 24, 20); ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(sx, speakerY + 15, 8, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(sx, speakerY + 40, 8, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(sx, speakerY + 15, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(sx, speakerY + 40, 4, 0, Math.PI*2); ctx.fill(); };
+      drawSpeaker(dx - 120); drawSpeaker(dx + 120);
+      const ballY = floorY - 300 + Math.sin(state.time * 0.05) * 10; ctx.fillStyle = '#555'; ctx.fillRect(dx - 1, 0, 2, ballY); 
+      ctx.save(); ctx.translate(dx, ballY); ctx.globalCompositeOperation = 'screen';
+      for(let i=0; i<6; i++){ ctx.save(); ctx.rotate(state.time*0.03 + i * (Math.PI*2/6)); const grad = ctx.createLinearGradient(0, 0, 0, 500); grad.addColorStop(0, 'rgba(255,255,255,0.2)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-80, 500); ctx.lineTo(80, 500); ctx.lineTo(5, 0); ctx.fill(); ctx.restore(); }
       ctx.globalCompositeOperation = 'source-over';
-      
-      ctx.fillStyle = '#ddd';
-      ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#999';
-      for(let i=-2; i<=2; i++) {
-         ctx.fillRect(i*10 - 2, -25, 4, 50);
-         ctx.fillRect(-25, i*10 - 2, 50, 4);
-      }
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-8, -8, 5, 0, Math.PI*2); ctx.fill(); 
-
+      ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#999'; for(let i=-2; i<=2; i++) { ctx.fillRect(i*10 - 2, -25, 4, 50); ctx.fillRect(-25, i*10 - 2, 50, 4); } ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-8, -8, 5, 0, Math.PI*2); ctx.fill(); 
       ctx.restore();
     }
 
     function drawBar(camX, floorY) {
-      const bx = BAR_X - camX;
-      if (bx < -200 || bx > canvas.width + 200) return;
-      
-      const tableTop = floorY - BAR_TABLE.h; 
-      const tableHeight = 100;
-      
+      const bx = BAR_X - camX; if (bx < -200 || bx > canvas.width + 200) return;
+      const tableTop = floorY - BAR_TABLE.h; const tableHeight = 100;
       const npcBob = Math.sin(state.time * 0.05) * 2;
       ctx.save(); ctx.translate(bx, tableTop - 50 + npcBob); ctx.scale(1.6, 1.6);
       ctx.fillStyle = '#1a1a1a'; ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18);
       ctx.fillStyle = '#000000'; ctx.fillRect(4, 24, 16, 18);
       ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 24, 8, 12); ctx.fillStyle = '#000000'; ctx.fillRect(11, 24, 2, 10);
-      ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16);
-      ctx.fillRect(3, 0, 18, 20);
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); ctx.fillRect(3, 0, 18, 20);
       ctx.fillStyle = '#3a2050'; ctx.fillRect(3, 0, 18, 6);
       ctx.fillStyle = '#fff'; ctx.fillRect(6, 6, 5, 6); ctx.fillRect(13, 6, 5, 6);
       ctx.fillStyle = '#000'; ctx.fillRect(8, 8, 2, 3); ctx.fillRect(15, 8, 2, 3);
       ctx.fillStyle = '#000'; ctx.fillRect(7, 15, 10, 2);
       ctx.restore();
-
       ctx.fillStyle = '#4a3020'; ctx.fillRect(bx - 60, tableTop, 150, tableHeight); 
       ctx.fillStyle = '#2a1a10'; ctx.fillRect(bx - 65, tableTop - 5, 160, 10); 
-      
-      ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 100, 5);
-      ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20);
-      ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
+      ctx.fillStyle = '#333'; ctx.fillRect(bx + 10, tableTop - 60, 100, 5); ctx.fillStyle = '#008000'; ctx.fillRect(bx + 20, tableTop - 80, 10, 20); ctx.fillStyle = '#ffaa00'; ctx.fillRect(bx + 60, tableTop - 75, 10, 15);
     }
 
     function drawWardrobe(camX, floorY) {
-      const wx = WARDROBE_X - camX;
-      if (wx < -150 || wx > canvas.width + 150) return;
-      ctx.fillStyle = '#0a0512'; ctx.fillRect(wx - 40, floorY - 150, 80, 150); 
-      ctx.fillStyle = '#05020a'; ctx.fillRect(wx - 35, floorY - 145, 70, 145); 
-      ctx.fillStyle = '#c19a6b'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); 
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(wx - 35, floorY - 145, 50, 145);
-      ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(wx + 5, floorY - 75, 5, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#7a3cff'; ctx.beginPath(); ctx.moveTo(wx - 35, floorY - 145); ctx.lineTo(wx + 15, floorY - 145); ctx.lineTo(wx + 5, floorY - 110); ctx.lineTo(wx - 25, floorY - 120); ctx.closePath(); ctx.fill();
+      const wx = WARDROBE_X - camX; if (wx < -150 || wx > canvas.width + 150) return;
+      ctx.fillStyle = '#0a0512'; ctx.fillRect(wx - 40, floorY - 150, 80, 150); ctx.fillStyle = '#05020a'; ctx.fillRect(wx - 35, floorY - 145, 70, 145); ctx.fillStyle = '#c19a6b'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(wx - 35, floorY - 145, 50, 145); ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(wx + 5, floorY - 75, 5, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#7a3cff'; ctx.beginPath(); ctx.moveTo(wx - 35, floorY - 145); ctx.lineTo(wx + 15, floorY - 145); ctx.lineTo(wx + 5, floorY - 110); ctx.lineTo(wx - 25, floorY - 120); ctx.closePath(); ctx.fill();
     }
 
     function drawDoors(camX, floorY) {
       for (const d of DOORS) {
         const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue; 
         const dh = 140, dw = 80, dy = floorY - dh, dxPos = dx - dw/2;
-        
         ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); 
         ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
-        
         ctx.fillStyle = '#4a3020'; 
         ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
         ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
-
-        ctx.fillStyle = '#888';
-        ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
-
-        ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25);
-        ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25);
-        ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('ЗАКРЫТО', dx, dy - 22); ctx.textAlign = 'left';
+        ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЗАКРЫТО', dx, dy - 22); ctx.textAlign = 'left';
       }
     }
 
     function drawCharacter(p, camX, baseFloorY) {
       const px = p.x - camX; const py = baseFloorY + p.y; 
       ctx.save();
-      
       ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(px + p.w/2, baseFloorY + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
       ctx.translate(px, py);
-      
       if (p.isDancing) { 
          if (p.danceType === 0) ctx.translate(0, Math.sin(state.time * 0.5) * 8); 
          if (p.danceType === 1) { ctx.rotate(Math.sin(state.time * 0.2) * 0.1); ctx.translate(0, Math.sin(state.time * 0.5) * 4); } 
          if (p.danceType === 2) ctx.translate(Math.sin(state.time * 0.5) * 4, 0); 
          if (p.danceType === 3) ctx.translate(0, Math.sin(state.time * 0.8) * 6); 
-      } else if (p.vx === 0 && p.onGround) { 
-         ctx.translate(0, Math.sin(state.time * 0.1) * 1.5); 
-      }
-      
+      } else if (p.vx === 0 && p.onGround) { ctx.translate(0, Math.sin(state.time * 0.1) * 1.5); }
       ctx.scale(1.6, 1.6);
-      
       const cSkin = p.colorSkin || '#f1c27d', cHair = p.colorHair || '#3a2050', cShirt = p.colorShirt || '#7a3cff', cPants = p.colorPants || '#1a1a1a', isFemale = p.gender === 'female';
-
       ctx.fillStyle = cPants;
       if (p.vx !== 0 && p.onGround && !p.isDancing) { const walk = Math.sin(state.time * 0.5) * 3; ctx.fillRect(5, 42 + walk, 6, 18); ctx.fillRect(13, 42 - walk, 6, 18); } else { ctx.fillRect(5, 42, 6, 18); ctx.fillRect(13, 42, 6, 18); }
-      
       ctx.fillStyle = cShirt; ctx.fillRect(4, 24, 16, 18);
       ctx.fillStyle = cSkin; 
-      if (p.isDancing) {
-          if (p.danceType === 3) { ctx.fillRect(0, 10 + Math.sin(state.time*0.8)*5, 4, 16); ctx.fillRect(20, 10 + Math.cos(state.time*0.8)*5, 4, 16); }
-          else { ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); }
-      } else {
-          ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16);
-      }
-      
+      if (p.isDancing) { if (p.danceType === 3) { ctx.fillRect(0, 10 + Math.sin(state.time*0.8)*5, 4, 16); ctx.fillRect(20, 10 + Math.cos(state.time*0.8)*5, 4, 16); } else { ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); } } else { ctx.fillRect(0, 24, 4, 16); ctx.fillRect(20, 24, 4, 16); }
       ctx.fillStyle = cSkin; ctx.fillRect(3, 0, 18, 20);
-      
       const eyeOffset = p.facing === 1 ? 2 : 0; 
       ctx.fillStyle = '#fff'; ctx.fillRect(6 + eyeOffset, 6, 5, 6); ctx.fillRect(13 + eyeOffset, 6, 5, 6);
       ctx.fillStyle = '#000'; ctx.fillRect(8 + eyeOffset, 8, 2, 3); ctx.fillRect(15 + eyeOffset, 8, 2, 3);
-      
       ctx.fillStyle = '#000'; ctx.fillRect(9 + eyeOffset, 15, 6, 2);
-
       ctx.fillStyle = cHair; 
-      if (isFemale) { ctx.fillRect(2, 0, 20, 8); ctx.fillRect(1, 8, 4, 14); ctx.fillRect(19, 8, 4, 14); } 
-      else { ctx.fillRect(3, 0, 18, 6); }
-      
-      if (p.hatType === 'cap') { 
-        ctx.fillStyle = p.hatColor; ctx.fillRect(3, 1, 18, 5); ctx.fillRect(15, 3, 8, 3); 
-      }
-
+      if (isFemale) { ctx.fillRect(2, 0, 20, 8); ctx.fillRect(1, 8, 4, 14); ctx.fillRect(19, 8, 4, 14); } else { ctx.fillRect(3, 0, 18, 6); }
+      if (p.hatType === 'cap') { ctx.fillStyle = p.hatColor; ctx.fillRect(3, 1, 18, 5); ctx.fillRect(15, 3, 8, 3); }
       ctx.restore();
-      
       if (p.nick) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(px - 10, py - 45, p.w + 20, 16); ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(p.nick, px + p.w/2, py - 33); ctx.textAlign = 'left'; }
     }
 
     function draw() {
       const w = canvas.width, h = canvas.height; const camX = Math.floor(state.camera.x); state.groundY = h - 80; 
       BAR_TABLE.y = state.groundY - BAR_TABLE.h; 
-      
       const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1a0a2e'); bg.addColorStop(0.7, '#2a1040'); bg.addColorStop(1, '#0a0512'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      
       ctx.strokeStyle = 'rgba(122, 60, 255, 0.15)'; ctx.lineWidth = 15; for (let x = Math.floor(camX / 600) * 600; x < camX + w + 600; x += 600) { ctx.beginPath(); ctx.arc(x - camX + 300, state.groundY - 150, 250, Math.PI, 0); ctx.stroke(); }
-      
-      const floorY = state.groundY, tile = 40; 
-      for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
+      const floorY = state.groundY, tile = 40; for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
-      
-      drawFurniture(camX, floorY);
-      drawDisco(camX, floorY);
-      drawBar(camX, floorY);
-      drawWardrobe(camX, floorY);
-      drawDoors(camX, floorY);
-
+      drawFurniture(camX, floorY); drawDisco(camX, floorY); drawBar(camX, floorY); drawWardrobe(camX, floorY); drawDoors(camX, floorY);
       for (let id in state.otherPlayers) { drawCharacter(state.otherPlayers[id], camX, floorY); }
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
@@ -426,17 +316,12 @@
       if (!state.loggedIn) return; const dt = Math.min(50, t - lastTime) / 16.67; lastTime = t; updatePhysics(dt); draw();
       requestAnimationFrame(loop);
     }
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height;
-      state.groundY = canvas.height - 80; state.player.y = state.groundY - state.player.h;
-    }
+    function resizeCanvas() { const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; state.groundY = canvas.height - 80; state.player.y = state.groundY - state.player.h; }
     window.addEventListener('resize', () => { if (state.loggedIn) resizeCanvas(); });
 
     chatToggleBtn.addEventListener('click', () => { chatPanel.classList.add('open'); chatInput.focus(); });
     closeChatBtn.addEventListener('click', () => { chatPanel.classList.remove('open'); chatInput.blur(); });
-    sendBtn.addEventListener('click', sendChat);
-    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+    sendBtn.addEventListener('click', sendChat); chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
     function sendChat() { const text = chatInput.value.trim(); if (text && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'chat', text: text })); chatInput.value = ''; }
     function addChatMessage(who, text) { const div = document.createElement('div'); div.className = 'msg'; div.innerHTML = `<span class="who">${escapeHtml(who)}:</span> ${escapeHtml(text)}`; chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight; }
     function addSystemMessage(text) { const div = document.createElement('div'); div.className = 'msg'; div.innerHTML = `<span class="sys">${escapeHtml(text)}</span>`; chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight; }
@@ -449,5 +334,7 @@
     btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); tryJump(); }, {passive: false});
     function tryJump() { if (state.player.onGround) { state.player.vy = -11; state.player.onGround = false; } }
   </script>
+  
+  <script src="wardrobe.js"></script>
 </body>
-                               </html>
+          </html>
