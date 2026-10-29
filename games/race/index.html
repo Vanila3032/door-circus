@@ -6,7 +6,6 @@
   <title>Steel Ball Run</title>
   <style>
     body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
-    /* Добавил z-index: 1, чтобы канвас был на заднем плане */
     canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     
     #ui-top { position: absolute; top: 70px; left: 0; width: 100%; text-align: center; color: white; font-family: sans-serif; font-weight: bold; text-shadow: 2px 2px 0 #000; font-size: 28px; pointer-events: none; z-index: 10; }
@@ -17,17 +16,14 @@
     .btn:active { background: rgba(255,255,255,0.3); }
     #btnShoot { border-color: #ff0; box-shadow: 0 0 15px #ff0; }
     
-    /* Стили для верхних кнопок - добавил z-index: 100, чтобы они были поверх всего */
-    .top-btn { position: absolute; top: 15px; z-index: 100; padding: 12px 18px; background: rgba(0,0,0,0.7); color: white; border: 2px solid white; border-radius: 10px; font-weight: bold; font-family: sans-serif; font-size: 16px; cursor: pointer; pointer-events: auto; }
+    /* Кнопка на весь экран по центру */
+    .top-btn { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 100; padding: 12px 18px; background: rgba(0,0,0,0.7); color: white; border: 2px solid white; border-radius: 10px; font-weight: bold; font-family: sans-serif; font-size: 16px; cursor: pointer; pointer-events: auto; }
     .top-btn:active { background: rgba(255,255,255,0.2); }
-    #btnBack { left: 15px; }
-    #btnFull { right: 15px; }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
   
-  <button id="btnBack" class="top-btn">В ЛОББИ</button>
   <button id="btnFull" class="top-btn">⛶ НА ВЕСЬ ЭКРАН</button>
 
   <div id="ui-top">ДО СТАРТА: <span id="timer">10</span></div>
@@ -51,9 +47,6 @@ try {
     const savedSkin = localStorage.getItem('recto_skin');
     if (savedSkin) mySkin = JSON.parse(savedSkin); 
 } catch(e){}
-
-// Кнопка выхода в лобби
-document.getElementById('btnBack').onclick = () => { window.location.href = '../../index.html'; };
 
 // Кнопка на весь экран
 document.getElementById('btnFull').onclick = () => {
