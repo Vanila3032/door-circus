@@ -6,16 +6,19 @@
   <title>Steel Ball Run</title>
   <style>
     body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
-    canvas { display: block; width: 100vw; height: 100vh; }
-    #ui-top { position: absolute; top: 20px; left: 0; width: 100%; text-align: center; color: white; font-family: sans-serif; font-weight: bold; text-shadow: 2px 2px 0 #000; font-size: 28px; pointer-events: none; }
-    #cooldown-text { position: absolute; top: 60px; right: 20px; color: yellow; font-family: sans-serif; font-weight: bold; font-size: 18px; text-shadow: 1px 1px 0 #000; pointer-events: none; }
-    .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
+    /* Добавил z-index: 1, чтобы канвас был на заднем плане */
+    canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    
+    #ui-top { position: absolute; top: 70px; left: 0; width: 100%; text-align: center; color: white; font-family: sans-serif; font-weight: bold; text-shadow: 2px 2px 0 #000; font-size: 28px; pointer-events: none; z-index: 10; }
+    #cooldown-text { position: absolute; top: 110px; right: 20px; color: yellow; font-family: sans-serif; font-weight: bold; font-size: 18px; text-shadow: 1px 1px 0 #000; pointer-events: none; z-index: 10; }
+    
+    .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; z-index: 10; }
     .btn { background: rgba(0,0,0,0.5); border: 3px solid white; color: white; border-radius: 50%; width: 90px; height: 90px; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; user-select: none; text-shadow: 1px 1px 0 #000; }
     .btn:active { background: rgba(255,255,255,0.3); }
     #btnShoot { border-color: #ff0; box-shadow: 0 0 15px #ff0; }
     
-    /* Стили для верхних кнопок */
-    .top-btn { position: absolute; top: 15px; z-index: 100; padding: 12px 18px; background: rgba(0,0,0,0.7); color: white; border: 2px solid white; border-radius: 10px; font-weight: bold; font-family: sans-serif; font-size: 16px; cursor: pointer; }
+    /* Стили для верхних кнопок - добавил z-index: 100, чтобы они были поверх всего */
+    .top-btn { position: absolute; top: 15px; z-index: 100; padding: 12px 18px; background: rgba(0,0,0,0.7); color: white; border: 2px solid white; border-radius: 10px; font-weight: bold; font-family: sans-serif; font-size: 16px; cursor: pointer; pointer-events: auto; }
     .top-btn:active { background: rgba(255,255,255,0.2); }
     #btnBack { left: 15px; }
     #btnFull { right: 15px; }
@@ -23,12 +26,13 @@
 </head>
 <body>
   <canvas id="game"></canvas>
-  <div id="ui-top">ДО СТАРТА: <span id="timer">10</span></div>
-  <div id="cooldown-text"></div>
   
   <button id="btnBack" class="top-btn">В ЛОББИ</button>
   <button id="btnFull" class="top-btn">⛶ НА ВЕСЬ ЭКРАН</button>
 
+  <div id="ui-top">ДО СТАРТА: <span id="timer">10</span></div>
+  <div id="cooldown-text"></div>
+  
   <div class="controls">
     <div class="btn" id="btnJump">ПРЫЖОК</div>
     <div class="btn" id="btnShoot">ВЫСТРЕЛ</div>
