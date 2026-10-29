@@ -2,8 +2,10 @@
   "name": "recto-server",
   "version": "1.0.0",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { 
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
     "ws": "^8.0.0",
     "@supabase/supabase-js": "^2.39.0"
   }
