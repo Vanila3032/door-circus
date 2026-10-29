@@ -190,8 +190,8 @@
     const DOORS = [{ id: 'd1', x: 800 }, { id: 'd2', x: 1000 }, { id: 'd3', x: 1200 }, { id: 'd4', x: 1400 }];
     const JUMP_FORCE = -11;
 
-    // ⚠️ СЮДА ВСТАВЬ ССЫЛКУ ОТ RENDER (когда создашь сервер)
-    const WS_HOST = 'wss://твой-сервер.onrender.com'; 
+    // ТВОЙ СЕРВЕР RENDER
+    const WS_HOST = 'wss://door-circus.onrender.com'; 
 
     const state = {
       loggedIn: false, nick: '', myId: null,
@@ -249,7 +249,6 @@
     function connectToServer() {
       if (ws) { try { ws.close(); } catch (_) {} ws = null; }
       
-      // Подключение к серверу Render
       ws = new WebSocket(WS_HOST);
       
       ws.onopen = () => { ws.send(JSON.stringify({ type: 'join', nick: state.nick, password: passInput.value.trim() || "123", appearance: state.player })); };
@@ -442,7 +441,7 @@
       // Отрисовка ника
       if (p.nick) {
         ctx.save();
-        ctx.scale(1/1.8, 1/1.8); // Возвращаем нормальный масштаб тексту
+        ctx.scale(1/1.8, 1/1.8);
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'center';
