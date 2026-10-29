@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Steel Ball Run - Test</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #ui-top { position: absolute; top: 20px; left: 0; width: 100%; text-align: center; color: white; font-family: sans-serif; font-weight: bold; text-shadow: 2px 2px 0 #000; font-size: 28px; pointer-events: none; }
+    #cooldown-text { position: absolute; top: 60px; right: 20px; color: yellow; font-family: sans-serif; font-weight: bold; font-size: 18px; text-shadow: 1px 1px 0 #000; }
+    .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
+    .btn { background: rgba(0,0,0,0.5); border: 3px solid white; color: white; border-radius: 50%; width: 90px; height: 90px; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; user-select: none; text-shadow: 1px 1px 0 #000; }
+    .btn:active { background: rgba(255,255,255,0.3); }
+    #btnShoot { border-color: #ff0; box-shadow: 0 0 15px #ff0; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui-top">ДО СТАРТА: <span id="timer">10</span></div>
+  <div id="cooldown-text"></div>
+  
+  <div class="controls">
+    <div class="btn" id="btnJump">ПРЫЖОК</div>
+    <div class="btn" id="btnShoot">ВЫСТРЕЛ</div>
+  </div>
+
+<script>
+const MUSIC_URL = ''; 
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+const FINISH_LINE = 30000; 
+
+const player = {
+  x: -100, y: 0, w: 70, h: 70, 
+  vy: 0,
+  onGround: true, isDead: false, slowTimer: 0, finished: false,
+  walkTimer: 0
+};
+
+let cameraX = -200; 
+let bullets = [];
+let rocks = [];
+let timeLeft = 10;
+let gameStarted = false;
+let lastTime = 0;
+
+let shootCooldown = 0;
+let nextBulletIsRed = true;
+
+function spawnRocks() {
+  rocks = [];
+  for(let i = 0; i < 50; i++) {
+    let rx = 800 + i * 550 + Math.random() * 300;
+    rocks.push({
+      x: rx,
+      w: 40 + Math.random() * 40,
+      h: 30 + Math.random() * 40,
+      points: [
+        {x: 0, y: 0}, {x: 0.3, y: -1}, {x: 0.7, y: -0.8}, {x: 1, y: 0}, {x: 0.8, y: 0.5}, {x: 0.2, y: 0.5}
+      ]
+    });
+  }
+}
+spawnRocks();
+
+document.getElementById('btnJump').addEventListener('touchstart', (e) => { 
+  e.preventDefault(); 
+  if(player.onGround && !player.isDead && !player.finished) player.vy = -14; 
+}, {passive: false});
+
+document.getElementById('btnShoot').addEventListener('touchstart', (e) => { 
+  e.preventDefault(); 
+  shootBullet(); 
+}, {passive: false});
+
+function shootBullet() {
+  if (player.isDead || !gameStarted || shootCooldown > 0 || player.finished) return;
+  bullets.push({
+    x: player.x + 70,
+    y: player.y + 15,
+    vx: 18,
+    isRed: nextBulletIsRed,
+    r: 10
+  });
+  nextBulletIsRed = !nextBulletIsRed;
+  shootCooldown = 3;
+}
+
+function update(dt) {
+  let dtSec = dt / 1000;
+  let floorY = H - 120;
+
+  if (timeLeft > 0) {
+    timeLeft -= dtSec;
+    document.getElementById('timer').innerText = Math.ceil(timeLeft);
+    player.y = floorY - player.h;
+    player.vy = 0;
+    
+    if (timeLeft <= 0) { 
+      gameStarted = true; 
+      document.getElementById('ui-top').innerText = "ГОНКА!";
+    }
+    return;
+  }
+
+  if (!gameStarted || player.isDead || player.finished) return;
+
+  if (shootCooldown > 0) {
+    shootCooldown -= dtSec;
+    document.getElementById('cooldown-text').innerText = "Перезарядка: " + shootCooldown.toFixed(1) + "с";
+    document.getElementById('cooldown-text').style.color = "#fff";
+  } else {
+    document.getElementById('cooldown-text').innerText = nextBulletIsRed ? "Готово: КРАСНАЯ" : "Готово: ЖЕЛТАЯ";
+    document.getElementById('cooldown-text').style.color = nextBulletIsRed ? "#ff4444" : "#ffff00";
+  }
+
+  let speed = 6; 
+  if (player.slowTimer > 0) { 
+    speed = 2.5; 
+    player.slowTimer -= dtSec; 
+  }
+  
+  player.x += speed;
+  player.vy += 0.6;
+  player.y += player.vy;
+  
+  if (player.onGround) player.walkTimer += dtSec * 15;
+
+  if (player.y > floorY - player.h) {
+    player.y = floorY - player.h;
+    player.vy = 0;
+    player.onGround = true;
+  } else {
+    player.onGround = false;
+  }
+
+  if (player.x >= FINISH_LINE) {
+    player.finished = true;
+    document.getElementById('ui-top').innerText = "ФИНИШ!";
+    document.getElementById('cooldown-text').innerText = "";
+  }
+
+  for (let r of rocks) {
+    if (player.x + player.w > r.x && player.x < r.x + r.w) {
+      if (player.y + player.h > floorY - r.h) {
+        if (player.slowTimer <= 0) player.slowTimer = 2;
+      }
+    }
+  }
+
+  let targetCamX = player.x - W / 3;
+  cameraX += (targetCamX - cameraX) * 0.1;
+  if (cameraX < -200) cameraX = -200;
+
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    let b = bullets[i];
+    b.x += b.vx;
+    if (b.x > cameraX + W + 100) bullets.splice(i, 1);
+  }
+}
+
+function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
+  ctx.save();
+  
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(px + 35, py + 70, 35, 8, 0, 0, Math.PI*2); ctx.fill();
+
+  if (isDead) ctx.globalAlpha = 0.5;
+
+  let horseColor = isSlowed ? '#999' : '#8B4513';
+  let darkHorse = isSlowed ? '#777' : '#5c2e0b';
+  
+  let legOffsetFront = Math.sin(walkTimer) * 8;
+  let legOffsetBack = Math.sin(walkTimer + Math.PI) * 8;
+  let bodyBob = Math.abs(Math.sin(walkTimer)) * 3;
+
+  // Задние ноги
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 10 + legOffsetBack, py + 45 - bodyBob, 10, 25);
+  ctx.fillStyle = '#111'; 
+  ctx.fillRect(px + 10 + legOffsetBack, py + 65 - bodyBob, 10, 5);
+
+  // Передние ноги
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 45 + legOffsetFront, py + 45 - bodyBob, 10, 25);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(px + 45 + legOffsetFront, py + 65 - bodyBob, 10, 5);
+
+  // Тело
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 10, py + 25 - bodyBob, 45, 25);
+
+  // ШЕЯ (Прямой блок, идущий вверх и вправо, чтобы не было горба)
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 50, py + 5 - bodyBob, 15, 25);
+  ctx.fillRect(px + 55, py - 5 - bodyBob, 10, 15);
+
+  // ГОЛОВА ЛОШАДИ
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 65, py - 10 - bodyBob, 25, 15); 
+  ctx.fillStyle = darkHorse;
+  ctx.fillRect(px + 88, py - 5 - bodyBob, 5, 5); // Морда
+
+  // Уши
+  ctx.fillStyle = horseColor;
+  ctx.fillRect(px + 68, py - 18 - bodyBob, 5, 8);
+  ctx.fillRect(px + 78, py - 18 - bodyBob, 5, 8);
+
+  // Хвост
+  let tailWave = Math.sin(walkTimer * 0.5) * 5;
+  ctx.fillStyle = darkHorse;
+  ctx.fillRect(px + 2, py + 25 + tailWave - bodyBob, 8, 25);
+
+  // ВСАДНИК
+  ctx.save();
+  ctx.translate(px + 32, py + 25 - bodyBob); 
+  
+  // Ноги всадника
+  ctx.fillStyle = '#1a1a1a'; 
+  ctx.fillRect(-10, 0, 8, 15); 
+  ctx.fillRect(2, 0, 8, 15);
+
+  // Торс (Прямоугольник, а не квадрат)
+  ctx.fillStyle = '#2244aa';
+  ctx.fillRect(-12, -28, 24, 28); 
+  
+  // Руки (держат поводья)
+  ctx.fillStyle = '#f1c27d'; 
+  ctx.fillRect(8, -18, 15, 6); 
+  ctx.fillRect(-2, -12, 10, 6);
+
+  // Голова (Приподнята на 2 пикселя)
+  ctx.fillStyle = '#f1c27d';
+  ctx.fillRect(-8, -50, 20, 20);
+  
+  // Волосы
+  ctx.fillStyle = '#4a2e1b';
+  ctx.fillRect(-8, -52, 20, 7); 
+  
+  // Глаза
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-4, -44, 5, 6);
+  ctx.fillRect(4, -44, 5, 6);
+  
+  // Зрачки
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-1, -42, 2, 3); 
+  ctx.fillRect(7, -42, 2, 3); 
+
+  // Рот
+  ctx.fillRect(2, -34, 6, 1);
+
+  // КОВБОЙСКАЯ ШЛЯПА
+  ctx.fillStyle = '#ffcc00';
+  ctx.beginPath();
+  ctx.moveTo(-14, -54); 
+  ctx.lineTo(18, -54);  
+  ctx.lineTo(14, -50);  
+  ctx.lineTo(-10, -50); 
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.arc(2, -54, 10, Math.PI, 0);
+  ctx.fill();
+
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(-7, -54, 18, 3);
+
+  ctx.restore(); 
+  ctx.restore(); 
+}
+
+function draw() {
+  let floorY = H - 120;
+
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#4facfe');
+  skyGrad.addColorStop(1, '#00f2fe');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+  
+  ctx.fillStyle = '#fffbe6';
+  ctx.beginPath(); ctx.arc(W - 100, 100, 50, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#C59B6D';
+  let mountainOffset = (cameraX * 0.3) % 300;
+  for(let i = -1; i < W/300 + 2; i++) {
+    let mx = i * 300 - mountainOffset;
+    ctx.beginPath();
+    ctx.moveTo(mx, floorY);
+    ctx.lineTo(mx + 150, floorY - 200);
+    ctx.lineTo(mx + 300, floorY);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#2E8B57';
+  let cactusOffset = (cameraX * 0.5) % 400;
+  for(let i = -1; i < W/400 + 2; i++) {
+    let cx = i * 400 - cactusOffset;
+    ctx.fillRect(cx, floorY - 80, 15, 80);
+    ctx.fillRect(cx - 15, floorY - 60, 15, 10);
+    ctx.fillRect(cx - 15, floorY - 60, 10, 40);
+    ctx.fillRect(cx + 15, floorY - 50, 15, 10);
+    ctx.fillRect(cx + 20, floorY - 50, 10, 30);
+  }
+
+  ctx.fillStyle = '#E6C280';
+  ctx.fillRect(0, floorY, W, 120);
+  ctx.fillStyle = '#D2A96A';
+  let floorOffset = cameraX % 100;
+  for(let i = -1; i < W/100 + 2; i++) {
+    ctx.fillRect(i * 100 - floorOffset, floorY, 50, 10);
+  }
+
+  let startLineX = 0 - cameraX;
+  if (startLineX > -50 && startLineX < W + 50) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(startLineX, floorY - 100, 20, 100);
+    ctx.fillStyle = '#000';
+    for(let i=0; i<10; i++) {
+      if(i%2===0) ctx.fillRect(startLineX, floorY - 100 + i*10, 20, 10);
+    }
+  }
+
+  let finishX = FINISH_LINE - cameraX;
+  if (finishX > -200 && finishX < W + 200) {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(finishX, floorY - 200, 20, 200);
+    ctx.fillRect(finishX + 150, floorY - 200, 20, 200);
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(finishX, floorY - 220, 170, 40);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('ФИНИШ', finishX + 40, floorY - 190);
+  }
+
+  for (let r of rocks) {
+    let rx = r.x - cameraX;
+    if (rx > -100 && rx < W + 100) {
+      ctx.fillStyle = '#777';
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(rx + r.w * r.points[0].x, floorY + r.points[0].y);
+      for(let i = 1; i < r.points.length; i++) {
+        ctx.lineTo(rx + r.w * r.points[i].x, floorY + r.h * r.points[i].y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  if (!player.isDead) {
+    drawHorseAndRider(player.x - cameraX, player.y, player.slowTimer > 0, false, player.walkTimer);
+  }
+
+  for (let b of bullets) {
+    let bx = b.x - cameraX;
+    ctx.beginPath();
+    ctx.arc(bx, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = b.isRed ? '#ff1111' : '#ffee00';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.shadowColor = b.isRed ? '#ff0000' : '#ffff00';
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function loop(t) {
+  let dt = t - lastTime; lastTime = t;
+  if (dt > 100) dt = 16;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+  </html>
