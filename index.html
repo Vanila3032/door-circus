@@ -88,6 +88,7 @@
       <p id="loginError" class="error"></p>
     </div>
   </div>
+
   <div id="lobbyScreen" class="screen">
     <canvas id="gameCanvas"></canvas>
     <div id="hud">
@@ -113,6 +114,7 @@
       </div>
     </div>
   </div>
+
   <div id="wardrobeScreen">
     <div class="wardrobe-preview"><canvas id="previewCanvas" width="400" height="600"></canvas></div>
     <div class="color-palette" id="colorPalette"></div>
@@ -184,16 +186,39 @@
       ws.onclose = () => addSystemMessage("Связь потеряна!");
     }
 
-    loginBtn.addEventListener('click', () => {
+    function doLogin() {
       if (state.loggedIn) return;
       const nick = nickInput.value.trim(); if (nick.length < 2) { loginError.textContent = 'Ник минимум 2 символа'; return; }
       loginError.textContent = ''; state.loggedIn = true; state.nick = nick;
+      
+      localStorage.setItem('recto_nick', nick);
+      localStorage.setItem('recto_pass', passInput.value.trim() || "123");
+
       loginScreen.classList.remove('active'); lobbyScreen.classList.add('active'); playerName.textContent = nick;
       try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
       connectToServer(); setTimeout(() => { resizeCanvas(); requestAnimationFrame(loop); }, 100);
+    }
+
+    loginBtn.addEventListener('click', doLogin);
+
+    window.addEventListener('load', () => {
+      const savedNick = localStorage.getItem('recto_nick');
+      const savedPass = localStorage.getItem('recto_pass');
+      if (savedNick && savedPass) {
+        nickInput.value = savedNick;
+        passInput.value = savedPass;
+        doLogin();
+      }
     });
 
-    logoutBtn.addEventListener('click', () => { if (ws) { try { ws.close(); } catch(_) {} ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); });
+    logoutBtn.addEventListener('click', () => { 
+      if (ws) { try { ws.close(); } catch(_) {} ws = null; } 
+      state.loggedIn = false; 
+      localStorage.removeItem('recto_nick');
+      localStorage.removeItem('recto_pass');
+      localStorage.removeItem('recto_skin');
+      lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); 
+    });
 
     interactBtn.addEventListener('click', () => {
       if (state.nearInteract === 'wardrobe') { 
@@ -435,4 +460,4 @@
     }
   </script>
 </body>
-  </html>
+</html>
