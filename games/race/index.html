@@ -16,9 +16,27 @@
     .btn:active { background: rgba(255,255,255,0.3); }
     #btnShoot { border-color: #ff0; box-shadow: 0 0 15px #ff0; }
     
-    /* Кнопка на весь экран по центру */
     .top-btn { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 100; padding: 12px 18px; background: rgba(0,0,0,0.7); color: white; border: 2px solid white; border-radius: 10px; font-weight: bold; font-family: sans-serif; font-size: 16px; cursor: pointer; pointer-events: auto; }
     .top-btn:active { background: rgba(255,255,255,0.2); }
+
+    #resultsScreen {
+      position: absolute; inset: 0; background: rgba(10, 5, 18, 0.95); z-index: 200; 
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      color: white; font-family: sans-serif;
+    }
+    #resultsScreen.open { display: flex; }
+    #resultsScreen h1 { color: #ffcc00; text-shadow: 0 0 20px #ffaa00; font-size: 48px; margin-bottom: 20px; }
+    .player-row {
+      background: rgba(255, 255, 255, 0.1); border: 2px solid #4a3a70; padding: 15px 30px; border-radius: 15px;
+      font-size: 24px; margin-bottom: 10px; display: flex; gap: 20px; align-items: center; min-width: 250px; justify-content: space-between;
+    }
+    .player-row.first-place { border-color: #ffcc00; background: rgba(255, 204, 0, 0.2); box-shadow: 0 0 20px rgba(255, 204, 0, 0.5); }
+    .player-row .place { font-weight: bold; color: #aaa; }
+    .player-row.first-place .place { color: #ffcc00; }
+    #btnBackLobby {
+      margin-top: 30px; padding: 15px 40px; background: #7a3cff; color: white; border: none; border-radius: 10px;
+      font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px #7a3cff;
+    }
   </style>
 </head>
 <body>
@@ -34,13 +52,18 @@
     <div class="btn" id="btnShoot">ВЫСТРЕЛ</div>
   </div>
 
+  <div id="resultsScreen">
+    <h1>ФИНИШ!</h1>
+    <div id="resultsList"></div>
+    <button id="btnBackLobby">В ЛОББИ</button>
+  </div>
+
 <script>
 // ==========================================
 // МЕСТО ДЛЯ ТВОЕЙ МУЗЫКИ (вставь ссылку в кавычки ниже)
 const MUSIC_URL = ''; 
 // ==========================================
 
-// Получаем ник и скин из памяти браузера
 const myNick = localStorage.getItem('recto_nick') || 'Игрок';
 let mySkin = null;
 try { 
@@ -48,15 +71,16 @@ try {
     if (savedSkin) mySkin = JSON.parse(savedSkin); 
 } catch(e){}
 
-// Кнопка на весь экран
 document.getElementById('btnFull').onclick = () => {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch((err) => {
-      alert('Ошибка при переходе в полноэкранный режим');
-    });
+    document.documentElement.requestFullscreen().catch((err) => {});
   } else {
     document.exitFullscreen();
   }
+};
+
+document.getElementById('btnBackLobby').onclick = () => {
+  window.location.href = '../../index.html';
 };
 
 const canvas = document.getElementById('game');
@@ -65,7 +89,7 @@ let W, H;
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 
-const FINISH_LINE = 30000; 
+const FINISH_LINE = 15000; 
 
 const player = {
   x: -100, y: 0, w: 70, h: 70, 
@@ -86,8 +110,9 @@ let nextBulletIsRed = true;
 
 function spawnRocks() {
   rocks = [];
-  for(let i = 0; i < 50; i++) {
+  for(let i = 0; i < 25; i++) {
     let rx = 800 + i * 550 + Math.random() * 300;
+    if (rx > FINISH_LINE - 500) break;
     rocks.push({
       x: rx,
       w: 40 + Math.random() * 40,
@@ -175,6 +200,7 @@ function update(dt) {
     player.finished = true;
     document.getElementById('ui-top').innerText = "ФИНИШ!";
     document.getElementById('cooldown-text').innerText = "";
+    showResults();
   }
 
   for (let r of rocks) {
@@ -196,12 +222,20 @@ function update(dt) {
   }
 }
 
+function showResults() {
+  const list = document.getElementById('resultsList');
+  list.innerHTML = ''; 
+  const row = document.createElement('div');
+  row.className = 'player-row first-place';
+  row.innerHTML = `<span class="place">1 МЕСТО</span><span class="name">${myNick}</span>`;
+  list.appendChild(row);
+  document.getElementById('resultsScreen').classList.add('open');
+}
+
 function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   ctx.save();
-  
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(px + 35, py + 70, 35, 8, 0, 0, Math.PI*2); ctx.fill();
-
   if (isDead) ctx.globalAlpha = 0.5;
 
   let horseColor = isSlowed ? '#999' : '#8B4513';
@@ -211,211 +245,103 @@ function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   let legOffsetBack = Math.sin(walkTimer + Math.PI) * 8;
   let bodyBob = Math.abs(Math.sin(walkTimer)) * 3;
 
-  // Задние ноги
-  ctx.fillStyle = horseColor;
-  ctx.fillRect(px + 10 + legOffsetBack, py + 45 - bodyBob, 10, 25);
-  ctx.fillStyle = '#111'; 
-  ctx.fillRect(px + 10 + legOffsetBack, py + 65 - bodyBob, 10, 5);
-
-  // Передние ноги
-  ctx.fillStyle = horseColor;
-  ctx.fillRect(px + 45 + legOffsetFront, py + 45 - bodyBob, 10, 25);
-  ctx.fillStyle = '#111';
-  ctx.fillRect(px + 45 + legOffsetFront, py + 65 - bodyBob, 10, 5);
-
-  // Тело
-  ctx.fillStyle = horseColor;
-  ctx.fillRect(px + 10, py + 25 - bodyBob, 45, 25);
-
-  // ШЕЯ
-  ctx.fillStyle = horseColor;
+  ctx.fillStyle = horseColor; ctx.fillRect(px + 10 + legOffsetBack, py + 45 - bodyBob, 10, 25);
+  ctx.fillStyle = '#111'; ctx.fillRect(px + 10 + legOffsetBack, py + 65 - bodyBob, 10, 5);
+  ctx.fillStyle = horseColor; ctx.fillRect(px + 45 + legOffsetFront, py + 45 - bodyBob, 10, 25);
+  ctx.fillStyle = '#111'; ctx.fillRect(px + 45 + legOffsetFront, py + 65 - bodyBob, 10, 5);
+  ctx.fillStyle = horseColor; ctx.fillRect(px + 10, py + 25 - bodyBob, 45, 25);
   ctx.fillRect(px + 50, py + 5 - bodyBob, 15, 25);
   ctx.fillRect(px + 55, py - 5 - bodyBob, 10, 15);
-
-  // ГОЛОВА ЛОШАДИ
-  ctx.fillStyle = horseColor;
   ctx.fillRect(px + 65, py - 10 - bodyBob, 25, 15); 
-  ctx.fillStyle = darkHorse;
-  ctx.fillRect(px + 88, py - 5 - bodyBob, 5, 5);
-
-  // Уши
-  ctx.fillStyle = horseColor;
-  ctx.fillRect(px + 68, py - 18 - bodyBob, 5, 8);
-  ctx.fillRect(px + 78, py - 18 - bodyBob, 5, 8);
-
-  // Хвост
+  ctx.fillStyle = darkHorse; ctx.fillRect(px + 88, py - 5 - bodyBob, 5, 5);
+  ctx.fillStyle = horseColor; ctx.fillRect(px + 68, py - 18 - bodyBob, 5, 8); ctx.fillRect(px + 78, py - 18 - bodyBob, 5, 8);
+  
   let tailWave = Math.sin(walkTimer * 0.5) * 5;
-  ctx.fillStyle = darkHorse;
-  ctx.fillRect(px + 2, py + 25 + tailWave - bodyBob, 8, 25);
+  ctx.fillStyle = darkHorse; ctx.fillRect(px + 2, py + 25 + tailWave - bodyBob, 8, 25);
 
-  // ВСАДНИК
   ctx.save();
   ctx.translate(px + 32, py + 25 - bodyBob); 
-  
-  // Ноги всадника
-  ctx.fillStyle = '#1a1a1a'; 
-  ctx.fillRect(-10, 0, 8, 15); 
-  ctx.fillRect(2, 0, 8, 15);
-
-  // Торс (Берем цвет из скина)
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-10, 0, 8, 15); ctx.fillRect(2, 0, 8, 15);
   ctx.fillStyle = (mySkin && mySkin.colorShirt) ? mySkin.colorShirt : '#2244aa';
   ctx.fillRect(-12, -28, 24, 28); 
-  
-  // Руки (держат поводья)
-  ctx.fillStyle = '#f1c27d'; 
-  ctx.fillRect(8, -18, 15, 6); 
-  ctx.fillRect(-2, -12, 10, 6);
-
-  // Голова (Берем цвет кожи из скина)
+  ctx.fillStyle = '#f1c27d'; ctx.fillRect(8, -18, 15, 6); ctx.fillRect(-2, -12, 10, 6);
   ctx.fillStyle = (mySkin && mySkin.colorSkin) ? mySkin.colorSkin : '#f1c27d';
   ctx.fillRect(-8, -50, 20, 20);
-  
-  // Волосы (Берем цвет волос из скина)
   ctx.fillStyle = (mySkin && mySkin.colorHair) ? mySkin.colorHair : '#4a2e1b';
   ctx.fillRect(-8, -52, 20, 7); 
-  
-  // Глаза
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(-4, -44, 5, 6);
-  ctx.fillRect(4, -44, 5, 6);
-  
-  // Зрачки
-  ctx.fillStyle = '#000';
-  ctx.fillRect(-1, -42, 2, 3); 
-  ctx.fillRect(7, -42, 2, 3); 
-
-  // Рот
-  ctx.fillRect(2, -34, 6, 1);
-
-  // КОВБОЙСКАЯ ШЛЯПА
+  ctx.fillStyle = '#fff'; ctx.fillRect(-4, -44, 5, 6); ctx.fillRect(4, -44, 5, 6);
+  ctx.fillStyle = '#000'; ctx.fillRect(-1, -42, 2, 3); ctx.fillRect(7, -42, 2, 3); ctx.fillRect(2, -34, 6, 1);
   ctx.fillStyle = '#ffcc00';
-  ctx.beginPath();
-  ctx.moveTo(-14, -54); 
-  ctx.lineTo(18, -54);  
-  ctx.lineTo(14, -50);  
-  ctx.lineTo(-10, -50); 
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.arc(2, -54, 10, Math.PI, 0);
-  ctx.fill();
-
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(-7, -54, 18, 3);
-
-  ctx.restore(); 
-  ctx.restore(); 
+  ctx.beginPath(); ctx.moveTo(-14, -54); ctx.lineTo(18, -54); ctx.lineTo(14, -50); ctx.lineTo(-10, -50); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(2, -54, 10, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#8B4513'; ctx.fillRect(-7, -54, 18, 3);
+  ctx.restore(); ctx.restore(); 
 }
 
 function draw() {
   let floorY = H - 120;
-
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-  skyGrad.addColorStop(0, '#4facfe');
-  skyGrad.addColorStop(1, '#00f2fe');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, W, H);
-  
-  ctx.fillStyle = '#fffbe6';
-  ctx.beginPath(); ctx.arc(W - 100, 100, 50, 0, Math.PI*2); ctx.fill();
+  skyGrad.addColorStop(0, '#4facfe'); skyGrad.addColorStop(1, '#00f2fe');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fffbe6'; ctx.beginPath(); ctx.arc(W - 100, 100, 50, 0, Math.PI*2); ctx.fill();
 
   ctx.fillStyle = '#C59B6D';
   let mountainOffset = (cameraX * 0.3) % 300;
   for(let i = -1; i < W/300 + 2; i++) {
     let mx = i * 300 - mountainOffset;
-    ctx.beginPath();
-    ctx.moveTo(mx, floorY);
-    ctx.lineTo(mx + 150, floorY - 200);
-    ctx.lineTo(mx + 300, floorY);
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(mx, floorY); ctx.lineTo(mx + 150, floorY - 200); ctx.lineTo(mx + 300, floorY); ctx.fill();
   }
 
   ctx.fillStyle = '#2E8B57';
   let cactusOffset = (cameraX * 0.5) % 400;
   for(let i = -1; i < W/400 + 2; i++) {
     let cx = i * 400 - cactusOffset;
-    ctx.fillRect(cx, floorY - 80, 15, 80);
-    ctx.fillRect(cx - 15, floorY - 60, 15, 10);
-    ctx.fillRect(cx - 15, floorY - 60, 10, 40);
-    ctx.fillRect(cx + 15, floorY - 50, 15, 10);
-    ctx.fillRect(cx + 20, floorY - 50, 10, 30);
+    ctx.fillRect(cx, floorY - 80, 15, 80); ctx.fillRect(cx - 15, floorY - 60, 15, 10); ctx.fillRect(cx - 15, floorY - 60, 10, 40); ctx.fillRect(cx + 15, floorY - 50, 15, 10); ctx.fillRect(cx + 20, floorY - 50, 10, 30);
   }
 
-  ctx.fillStyle = '#E6C280';
-  ctx.fillRect(0, floorY, W, 120);
+  ctx.fillStyle = '#E6C280'; ctx.fillRect(0, floorY, W, 120);
   ctx.fillStyle = '#D2A96A';
   let floorOffset = cameraX % 100;
-  for(let i = -1; i < W/100 + 2; i++) {
-    ctx.fillRect(i * 100 - floorOffset, floorY, 50, 10);
-  }
+  for(let i = -1; i < W/100 + 2; i++) { ctx.fillRect(i * 100 - floorOffset, floorY, 50, 10); }
 
   let startLineX = 0 - cameraX;
   if (startLineX > -50 && startLineX < W + 50) {
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(startLineX, floorY - 100, 20, 100);
+    ctx.fillStyle = '#fff'; ctx.fillRect(startLineX, floorY - 100, 20, 100);
     ctx.fillStyle = '#000';
-    for(let i=0; i<10; i++) {
-      if(i%2===0) ctx.fillRect(startLineX, floorY - 100 + i*10, 20, 10);
-    }
+    for(let i=0; i<10; i++) { if(i%2===0) ctx.fillRect(startLineX, floorY - 100 + i*10, 20, 10); }
   }
 
   let finishX = FINISH_LINE - cameraX;
   if (finishX > -200 && finishX < W + 200) {
-    ctx.fillStyle = '#333';
-    ctx.fillRect(finishX, floorY - 200, 20, 200);
-    ctx.fillRect(finishX + 150, floorY - 200, 20, 200);
-    ctx.fillStyle = '#ff0000';
-    ctx.fillRect(finishX, floorY - 220, 170, 40);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillText('ФИНИШ', finishX + 40, floorY - 190);
+    ctx.fillStyle = '#333'; ctx.fillRect(finishX, floorY - 200, 20, 200); ctx.fillRect(finishX + 150, floorY - 200, 20, 200);
+    ctx.fillStyle = '#ff0000'; ctx.fillRect(finishX, floorY - 220, 170, 40);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('ФИНИШ', finishX + 40, floorY - 190);
   }
 
   for (let r of rocks) {
     let rx = r.x - cameraX;
     if (rx > -100 && rx < W + 100) {
-      ctx.fillStyle = '#777';
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(rx + r.w * r.points[0].x, floorY + r.points[0].y);
-      for(let i = 1; i < r.points.length; i++) {
-        ctx.lineTo(rx + r.w * r.points[i].x, floorY + r.h * r.points[i].y);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fillStyle = '#777'; ctx.strokeStyle = '#444'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(rx + r.w * r.points[0].x, floorY + r.points[0].y);
+      for(let i = 1; i < r.points.length; i++) { ctx.lineTo(rx + r.w * r.points[i].x, floorY + r.h * r.points[i].y); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
     }
   }
 
-  if (!player.isDead) {
-    drawHorseAndRider(player.x - cameraX, player.y, player.slowTimer > 0, false, player.walkTimer);
-  }
+  if (!player.isDead) { drawHorseAndRider(player.x - cameraX, player.y, player.slowTimer > 0, false, player.walkTimer); }
 
   for (let b of bullets) {
     let bx = b.x - cameraX;
-    ctx.beginPath();
-    ctx.arc(bx, b.y, b.r, 0, Math.PI * 2);
-    ctx.fillStyle = b.isRed ? '#ff1111' : '#ffee00';
-    ctx.fill();
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    ctx.shadowColor = b.isRed ? '#ff0000' : '#ffff00';
-    ctx.shadowBlur = 15;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(bx, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = b.isRed ? '#ff1111' : '#ffee00'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.shadowColor = b.isRed ? '#ff0000' : '#ffff00'; ctx.shadowBlur = 15; ctx.fill(); ctx.shadowBlur = 0;
   }
 }
 
 function loop(t) {
   let dt = t - lastTime; lastTime = t;
   if (dt > 100) dt = 16;
-  update(dt);
-  draw();
-  requestAnimationFrame(loop);
+  update(dt); draw(); requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 </script>
