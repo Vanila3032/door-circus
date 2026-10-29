@@ -9,8 +9,6 @@
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a12; color: #eee; }
     .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; }
     .screen.active { display: flex; }
-
-    /* ВХОД */
     #loginScreen { align-items: center; justify-content: center; background: radial-gradient(circle at 50% 20%, #1a0b2e 0%, #0a0a12 80%); z-index: 50; }
     .login-box { width: 90%; max-width: 420px; padding: 30px 24px; background: rgba(15, 10, 25, 0.7); border: 1px solid rgba(122, 60, 255, 0.4); border-radius: 20px; box-shadow: 0 0 30px rgba(122, 60, 255, 0.2); text-align: center; position: relative; }
     .version-tag { position: absolute; top: 10px; right: 15px; font-size: 12px; color: #ff6ad5; font-weight: bold; }
@@ -21,11 +19,8 @@
     .input-frame input:focus { border-color: #ff6ad5; }
     .login-box button { width: 100%; padding: 16px; background: linear-gradient(135deg, #7a3cff, #ff6ad5); border: none; border-radius: 10px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
     .error { color: #ff5566; font-size: 13px; margin-top: 15px; min-height: 18px; }
-
-    /* ИГРА */
     #lobbyScreen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; overflow: hidden; }
     #gameCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-
     #hud { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; }
     .top-left-panel { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
     #onlineBadge { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 4px; }
@@ -33,16 +28,12 @@
     .top-right-panel { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
     #playerInfo { background: rgba(20, 14, 34, 0.85); border: 1px solid #4a3a70; border-radius: 20px; padding: 6px 14px; font-size: 13px; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
     #playerInfo button { background: rgba(255, 85, 102, 0.2); border: 1px solid #ff5566; color: #ff5566; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; }
-
     #interactBtn { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); background: rgba(122, 60, 255, 0.95); border: 2px solid #ff6ad5; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; }
     #interactBtn.show { display: block; }
-
     #controls { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 10; }
     .move-btns { display: flex; gap: 15px; pointer-events: auto; }
     #controls button { width: 70px; height: 70px; border-radius: 50%; background: rgba(20, 10, 35, 0.6); border: 2px solid rgba(122, 60, 255, 0.8); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
     #btnJump { pointer-events: auto; width: 85px; height: 85px; border-color: rgba(255, 106, 213, 0.8); }
-
-    /* ЧАТ */
     #chatPanel { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 350px; background: #0e0a18; border-left: 2px solid #4a3a70; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s; z-index: 20; }
     #chatPanel.open { transform: translateX(0); }
     .chat-header { padding: 15px; background: #150a25; border-bottom: 1px solid #2a2040; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #ff6ad5; }
@@ -53,55 +44,29 @@
     #chatInputRow { display: flex; padding: 10px; gap: 10px; border-top: 1px solid #2a2040; background: #0a0712; }
     #chatInput { flex: 1; padding: 12px; background: #1a1428; border: 1px solid #4a3a70; border-radius: 8px; color: #fff; outline: none; }
     #sendBtn { width: 50px; background: linear-gradient(135deg, #7a3cff, #ff6ad5); border: none; border-radius: 8px; color: #fff; font-size: 18px; cursor: pointer; }
-
-    /* ГАРДЕРОБ */
-    #wardrobeScreen {
-      position: absolute; inset: 0; z-index: 100; display: none; flex-direction: column; overflow: hidden;
-      background:
-        radial-gradient(circle at 20% 10%, rgba(255,106,213,0.18) 0%, transparent 45%),
-        radial-gradient(circle at 85% 90%, rgba(122,60,255,0.30) 0%, transparent 55%),
-        linear-gradient(160deg, #2a1040 0%, #1a0a2e 55%, #120a1e 100%);
-    }
+    #wardrobeScreen { position: absolute; inset: 0; z-index: 100; display: none; flex-direction: column; overflow: hidden; background: radial-gradient(circle at 20% 10%, rgba(255,106,213,0.18) 0%, transparent 45%), radial-gradient(circle at 85% 90%, rgba(122,60,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #2a1040 0%, #1a0a2e 55%, #120a1e 100%); }
     #wardrobeScreen.open { display: flex; }
-    #wardrobeScreen::after {
-      content: ''; position: absolute; left: 50%; bottom: 18%; width: 60%; max-width: 500px; height: 60px;
-      transform: translateX(-50%); border-radius: 50%;
-      background: radial-gradient(ellipse at center, rgba(255,106,213,0.35), rgba(122,60,255,0.10) 60%, transparent 80%);
-      pointer-events: none; z-index: 1;
-    }
-
+    #wardrobeScreen::after { content: ''; position: absolute; left: 50%; bottom: 18%; width: 60%; max-width: 500px; height: 60px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at center, rgba(255,106,213,0.35), rgba(122,60,255,0.10) 60%, transparent 80%); pointer-events: none; z-index: 1; }
     .color-palette { position: absolute; top: 15px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; z-index: 15; height: 50px; flex-wrap: wrap; padding: 0 60px; pointer-events: auto; }
     .color-btn { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.1s; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     .color-btn.active { transform: scale(1.15); border-color: #fff; box-shadow: 0 0 15px #fff; }
-
     .wardrobe-sidebar { position: absolute; left: 10px; top: 80px; bottom: 120px; display: flex; flex-direction: column; gap: 10px; z-index: 20; overflow-y: auto; pointer-events: auto; padding-right: 5px; }
     .cat-btn { width: 55px; height: 55px; border-radius: 15px; background: rgba(20, 10, 40, 0.7); border: 2px solid #4a3a70; color: #fff; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
     .cat-btn.active { background: #7a3cff; border-color: #ff6ad5; box-shadow: 0 0 15px rgba(122, 60, 255, 0.8); transform: scale(1.05); }
-
     .wardrobe-preview { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 5; pointer-events: none; }
     #previewCanvas { max-height: 60vh; width: auto; object-fit: contain; margin-top: 30px; }
-
     .options-panel { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(30, 18, 50, 0.98), rgba(30, 18, 50, 0.85)); border-top: 2px solid #7a3cff; border-radius: 25px 25px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s; z-index: 30; max-height: 45%; pointer-events: auto; box-shadow: 0 -8px 30px rgba(122,60,255,0.25); }
     .options-panel.open { transform: translateY(0); }
     .panel-header { padding: 12px 20px 5px; display: flex; justify-content: space-between; align-items: center; }
     .panel-title { font-weight: bold; color: #ff6ad5; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
     .close-panel { background: rgba(255, 255, 255, 0.1); border: none; color: #fff; font-size: 20px; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .panel-content { padding: 0 20px 15px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-
     .opt-btn { background: rgba(0, 0, 0, 0.5); border: 2px solid #4a3a70; color: #aaa; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 80px; text-align: center; transition: all 0.2s; }
     .opt-btn.active { background: #7a3cff; color: #fff; border-color: #ff6ad5; }
-
-    .particle-opt {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 6px; padding: 14px 10px; min-width: 90px;
-    }
-    .particle-opt .p-dot {
-      width: 22px; height: 22px; border-radius: 50%;
-      box-shadow: 0 0 12px currentColor;
-    }
+    .particle-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 10px; min-width: 90px; }
+    .particle-opt .p-dot { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 12px currentColor; }
     .particle-opt .p-label { font-size: 12px; color: #ccc; }
     .particle-opt.active .p-label { color: #fff; }
-
     .bottom-actions { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; gap: 15px; z-index: 25; pointer-events: auto; justify-content: space-between; }
     .action-btn { flex: 1; padding: 18px; border: none; border-radius: 15px; font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
     #wearBtn { background: linear-gradient(135deg, #3cff9c, #00cc66); color: #000; box-shadow: 0 0 20px rgba(60, 255, 156, 0.4); max-width: 200px; }
@@ -110,7 +75,6 @@
   </style>
 </head>
 <body>
-
   <div id="loginScreen" class="screen active">
     <div class="login-box">
       <div class="version-tag">v1.5.2</div>
@@ -124,7 +88,6 @@
       <p id="loginError" class="error"></p>
     </div>
   </div>
-
   <div id="lobbyScreen" class="screen">
     <canvas id="gameCanvas"></canvas>
     <div id="hud">
@@ -136,14 +99,11 @@
         <div id="playerInfo"><span id="playerName">—</span><button id="logoutBtn">Выйти</button></div>
       </div>
     </div>
-
     <button id="interactBtn">Действие</button>
-
     <div id="controls">
       <div class="move-btns"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
       <button id="btnJump">⤒</button>
     </div>
-
     <div id="chatPanel">
       <div class="chat-header"><span>Чат</span><button id="closeChatBtn">✖</button></div>
       <div id="chatMessages"></div>
@@ -153,14 +113,9 @@
       </div>
     </div>
   </div>
-
   <div id="wardrobeScreen">
-    <div class="wardrobe-preview">
-      <canvas id="previewCanvas" width="400" height="600"></canvas>
-    </div>
-
+    <div class="wardrobe-preview"><canvas id="previewCanvas" width="400" height="600"></canvas></div>
     <div class="color-palette" id="colorPalette"></div>
-
     <div class="wardrobe-sidebar">
       <button class="cat-btn active" data-category="skin">🧑</button>
       <button class="cat-btn" data-category="hair">💇</button>
@@ -169,15 +124,10 @@
       <button class="cat-btn" data-category="pants">👖</button>
       <button class="cat-btn" data-category="particles">✨</button>
     </div>
-
     <div class="options-panel" id="optionsPanel">
-      <div class="panel-header">
-        <div class="panel-title" id="panelTitle">Кожа</div>
-        <button class="close-panel" id="closePanelBtn">✖</button>
-      </div>
+      <div class="panel-header"><div class="panel-title" id="panelTitle">Кожа</div><button class="close-panel" id="closePanelBtn">✖</button></div>
       <div class="panel-content" id="panelContent"></div>
     </div>
-
     <div class="bottom-actions">
       <button class="action-btn" id="closeWardrobeBtn">Отмена</button>
       <button class="action-btn" id="wearBtn">Надеть</button>
@@ -188,23 +138,13 @@
     const BAR_X = 150; const WARDROBE_X = 500;
     const DOORS = [{ id: 'd1', x: 800 }, { id: 'd2', x: 1000 }, { id: 'd3', x: 1200 }, { id: 'd4', x: 1400 }];
     const JUMP_FORCE = -11;
-
     const WS_HOST = 'wss://door-circus.onrender.com'; 
 
     const state = {
       loggedIn: false, nick: '', myId: null,
-      player: {
-          x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1,
-          walkTimer: 0,
-          colorSkin: '#f1c27d', colorHair: '#4a2e1b', hairStyle: 'short',
-          colorEyes: '#000000',
-          colorShirt: '#20b2aa', shirtStyle: 'tshirt',
-          colorPants: '#228b22',
-          particleType: 'gold'
-      },
+      player: { x: 500, y: 0, vx: 0, vy: 0, w: 24, h: 64, onGround: false, facing: 1, walkTimer: 0, colorSkin: '#f1c27d', colorHair: '#4a2e1b', hairStyle: 'short', colorEyes: '#000000', colorShirt: '#20b2aa', shirtStyle: 'tshirt', colorPants: '#228b22', particleType: 'gold' },
       otherPlayers: {}, camera: { x: 0 }, keys: { left: false, right: false, jump: false },
-      nearInteract: null, worldWidth: 2500, floorLine: 0, time: 0, blinkTimer: 0, isBlinking: false,
-      particles: []
+      nearInteract: null, worldWidth: 2500, floorLine: 0, time: 0, blinkTimer: 0, isBlinking: false, particles: []
     };
 
     const PARTICLE_PROFILES = {
@@ -213,25 +153,17 @@
       fire: { spawnChance: 0.6, spawnSpreadX: 4, vxRange: 0.6, vyMin: -4.0, vyMax: -2.2, gravity: -0.02, decay: 0.04, size: 4, pickColor: () => { const t = Math.random(); if (t < 0.5) return '#ffdd00'; if (t < 0.8) return '#ff8800'; return '#ff3300'; } },
       none: null,
     };
-
     const MAX_PARTICLES = 200;
-
     const $ = (id) => document.getElementById(id);
     const loginScreen = $('loginScreen'), lobbyScreen = $('lobbyScreen'), nickInput = $('nickInput'), passInput = $('passInput'), loginBtn = $('loginBtn'), loginError = $('loginError'), playerName = $('playerName'), logoutBtn = $('logoutBtn'), onlineCount = $('onlineCount'), onlineDot = $('onlineDot'), chatMessages = $('chatMessages'), chatInput = $('chatInput'), sendBtn = $('sendBtn'), canvas = $('gameCanvas'), ctx = canvas.getContext('2d'), chatPanel = $('chatPanel'), chatToggleBtn = $('chatToggleBtn'), closeChatBtn = $('closeChatBtn'), interactBtn = $('interactBtn');
-
     const wardrobeScreen = $('wardrobeScreen'), previewCanvas = $('previewCanvas'), pCtx = previewCanvas.getContext('2d'), panelTitle = $('panelTitle'), panelContent = $('panelContent'), optionsPanel = $('optionsPanel'), closePanelBtn = $('closePanelBtn'), wearBtn = $('wearBtn'), closeWardrobeBtn = $('closeWardrobeBtn'), colorPalette = $('colorPalette');
 
-    ctx.imageSmoothingEnabled = false;
-    pCtx.imageSmoothingEnabled = false;
-
-    let ws = null;
-    let tempAppearance = {};
+    ctx.imageSmoothingEnabled = false; pCtx.imageSmoothingEnabled = false;
+    let ws = null; let tempAppearance = {};
 
     function connectToServer() {
       if (ws) { try { ws.close(); } catch (_) {} ws = null; }
-      
       ws = new WebSocket(WS_HOST);
-      
       ws.onopen = () => { ws.send(JSON.stringify({ type: 'join', nick: state.nick, password: passInput.value.trim() || "123", appearance: state.player })); };
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -267,190 +199,76 @@
       if (state.nearInteract === 'wardrobe') { 
           openWardrobe(); 
       } else if (state.nearInteract === 'race') {
-          // Перекидываем игрока в игру и передаем его данные
-          const skinData = encodeURIComponent(JSON.stringify(state.player));
-          window.location.href = `games/race/index.html?nick=${encodeURIComponent(state.nick)}&skin=${skinData}`;
+          localStorage.setItem('recto_nick', state.nick);
+          localStorage.setItem('recto_skin', JSON.stringify(state.player));
+          window.location.href = `games/race/index.html`;
       }
     });
 
     let lastSentX = 0, sendTimer = 0;
     function updatePhysics(dt) {
       if (!state.loggedIn) return; const p = state.player; const speed = 4;
-
       p.vx = 0; if (state.keys.left) { p.vx = -speed; p.facing = -1; } if (state.keys.right) { p.vx = speed; p.facing = 1; } p.x += p.vx;
       if (p.vx !== 0 && p.onGround) { p.walkTimer += dt; } else { p.walkTimer = 0; }
-
       if (p.x < 0) p.x = 0; if (p.x + p.w > state.worldWidth) p.x = state.worldWidth - p.w;
-
       p.vy += 0.55; p.y += p.vy;
-
       if (p.y >= 0) { p.y = 0; p.vy = 0; p.onGround = true; } else { p.onGround = false; }
-
       const targetCam = p.x + p.w/2 - canvas.width / 2; state.camera.x += (targetCam - state.camera.x) * 0.15;
       if (state.camera.x < 0) state.camera.x = 0; const maxCam = state.worldWidth - canvas.width; if (state.camera.x > maxCam) state.camera.x = maxCam;
-
       sendTimer += dt * 16.67;
       if (ws && ws.readyState === WebSocket.OPEN && (Math.abs(p.x - lastSentX) > 1 || sendTimer > 50)) { ws.send(JSON.stringify({ type: 'move', x: p.x, y: p.y, facing: p.facing })); lastSentX = p.x; sendTimer = 0; }
-
       const px = p.x + p.w/2;
       state.nearInteract = null;
-
-      if (Math.abs(px - WARDROBE_X) < 70) { 
-          state.nearInteract = 'wardrobe'; 
-          interactBtn.textContent = '👗 Гардероб'; 
-          interactBtn.classList.add('show'); 
-      } 
-      else if (Math.abs(px - DOORS[0].x) < 70) { 
-          state.nearInteract = 'race'; 
-          interactBtn.textContent = '🐎 Скачки'; 
-          interactBtn.classList.add('show'); 
-      } 
-      else { 
-          interactBtn.classList.remove('show'); 
-      }
-
+      if (Math.abs(px - WARDROBE_X) < 70) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); } 
+      else if (Math.abs(px - DOORS[0].x) < 70) { state.nearInteract = 'race'; interactBtn.textContent = '🐎 Скачки'; interactBtn.classList.add('show'); } 
+      else { interactBtn.classList.remove('show'); }
       state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
-
+      
       const profile = PARTICLE_PROFILES[p.particleType] || null;
-
-      if (
-          profile &&
-          p.vx !== 0 && p.onGround &&
-          Math.random() < profile.spawnChance &&
-          state.particles.length < MAX_PARTICLES &&
-          state.floorLine > 0
-      ) {
-          state.particles.push({
-              x: p.x + p.w / 2 + (Math.random() * 2 - 1) * profile.spawnSpreadX,
-              y: state.floorLine - 5,
-              vx: (Math.random() * 2 - 1) * profile.vxRange,
-              vy: profile.vyMin + Math.random() * (profile.vyMax - profile.vyMin),
-              life: 1,
-              color: profile.pickColor(),
-              size: profile.size,
-          });
+      if (profile && p.vx !== 0 && p.onGround && Math.random() < profile.spawnChance && state.particles.length < MAX_PARTICLES && state.floorLine > 0) {
+          state.particles.push({ x: p.x + p.w / 2 + (Math.random() * 2 - 1) * profile.spawnSpreadX, y: state.floorLine - 5, vx: (Math.random() * 2 - 1) * profile.vxRange, vy: profile.vyMin + Math.random() * (profile.vyMax - profile.vyMin), life: 1, color: profile.pickColor(), size: profile.size });
       }
-
       for (let i = state.particles.length - 1; i >= 0; i--) {
-          const pt = state.particles[i];
-          const prof = PARTICLE_PROFILES[p.particleType];
-          const grav = prof ? prof.gravity : 0;
-          const dec = prof ? prof.decay : 0.02;
-          pt.x += pt.vx;
-          pt.y += pt.vy;
-          pt.vy += grav;
-          pt.life -= dec;
+          const pt = state.particles[i]; const prof = PARTICLE_PROFILES[p.particleType];
+          pt.x += pt.vx; pt.y += pt.vy; pt.vy += (prof ? prof.gravity : 0); pt.life -= (prof ? prof.decay : 0.02);
           if (pt.life <= 0) state.particles.splice(i, 1);
       }
     }
 
     function drawCharacter(p, camX, floorLine) {
-      const px = p.x - camX;
-      ctx.save();
-
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.beginPath();
-      ctx.ellipse(px + p.w/2, floorLine + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2);
-      ctx.fill();
-
-      ctx.translate(px + p.w/2, floorLine + p.y);
-      ctx.scale(1.8, 1.8);
-
+      const px = p.x - camX; ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(px + p.w/2, floorLine + 2, p.w/2 + 5, 6, 0, 0, Math.PI*2); ctx.fill();
+      ctx.translate(px + p.w/2, floorLine + p.y); ctx.scale(1.8, 1.8);
       let offsetY = 0, leftArmAngle = 0, rightArmAngle = 0, leftLegY = 0, rightLegY = 0;
-
-      if (p.walkTimer > 0 && p.onGround) {
-          const walkCycle = Math.sin(p.walkTimer * 0.25);
-          offsetY = Math.abs(walkCycle) * -2; leftLegY = walkCycle > 0 ? -2 : 0; rightLegY = walkCycle < 0 ? -2 : 0;
-          leftArmAngle = -walkCycle * 0.3; rightArmAngle = walkCycle * 0.3;
-      }
-
-      ctx.fillStyle = p.colorPants || '#228b22';
-      ctx.fillRect(-7, -18 + leftLegY, 6, 18); ctx.fillRect(1, -18 + rightLegY, 6, 18);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.fillRect(-6, -14 + leftLegY, 4, 4); ctx.fillRect(2, -14 + rightLegY, 4, 4);
-
-      ctx.fillStyle = '#111';
-      ctx.fillRect(-7, -4 + leftLegY, 6, 4); ctx.fillRect(1, -4 + rightLegY, 6, 4);
-
+      if (p.walkTimer > 0 && p.onGround) { const walkCycle = Math.sin(p.walkTimer * 0.25); offsetY = Math.abs(walkCycle) * -2; leftLegY = walkCycle > 0 ? -2 : 0; rightLegY = walkCycle < 0 ? -2 : 0; leftArmAngle = -walkCycle * 0.3; rightArmAngle = walkCycle * 0.3; }
+      ctx.fillStyle = p.colorPants || '#228b22'; ctx.fillRect(-7, -18 + leftLegY, 6, 18); ctx.fillRect(1, -18 + rightLegY, 6, 18);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-6, -14 + leftLegY, 4, 4); ctx.fillRect(2, -14 + rightLegY, 4, 4);
+      ctx.fillStyle = '#111'; ctx.fillRect(-7, -4 + leftLegY, 6, 4); ctx.fillRect(1, -4 + rightLegY, 6, 4);
       ctx.save(); ctx.translate(0, offsetY);
-
       const cSkin = p.colorSkin || '#f1c27d';
-
-      ctx.fillStyle = cSkin;
-      ctx.save(); ctx.translate(-9, -34); ctx.rotate(leftArmAngle); ctx.fillRect(-4, 0, 4, 15); ctx.restore();
-      ctx.save(); ctx.translate(9, -34); ctx.rotate(rightArmAngle); ctx.fillRect(0, 0, 4, 15); ctx.restore();
-
+      ctx.fillStyle = cSkin; ctx.save(); ctx.translate(-9, -34); ctx.rotate(leftArmAngle); ctx.fillRect(-4, 0, 4, 15); ctx.restore(); ctx.save(); ctx.translate(9, -34); ctx.rotate(rightArmAngle); ctx.fillRect(0, 0, 4, 15); ctx.restore();
       ctx.fillStyle = cSkin; ctx.fillRect(-8, -38, 16, 18);
-      ctx.fillStyle = p.colorShirt || '#20b2aa';
-      ctx.fillRect(-8, -38, 16, 18);
-
+      ctx.fillStyle = p.colorShirt || '#20b2aa'; ctx.fillRect(-8, -38, 16, 18);
       if (p.shirtStyle === 'tshirt') {
-          const shirtColor = p.colorShirt || '#20b2aa';
-          ctx.fillStyle = shirtColor;
-          ctx.fillRect(-8, -38, 16, 18);
-          ctx.fillRect(-11, -37, 3, 7);
-          ctx.fillRect(8, -37, 3, 7);
-          ctx.fillStyle = 'rgba(0,0,0,0.35)';
-          ctx.fillRect(-4, -38, 8, 3);
-          ctx.fillStyle = 'rgba(255,255,255,0.25)';
-          ctx.fillRect(-4, -35, 8, 1);
-          ctx.fillStyle = 'rgba(0,0,0,0.25)';
-          ctx.fillRect(-8, -38, 1, 18);
-          ctx.fillRect(7, -38, 1, 18);
-          ctx.fillRect(-11, -30, 3, 1);
-          ctx.fillRect(8, -30, 3, 1);
-          ctx.fillStyle = 'rgba(0,0,0,0.3)';
-          ctx.fillRect(-8, -21, 16, 1);
+          const shirtColor = p.colorShirt || '#20b2aa'; ctx.fillStyle = shirtColor; ctx.fillRect(-8, -38, 16, 18); ctx.fillRect(-11, -37, 3, 7); ctx.fillRect(8, -37, 3, 7);
+          ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(-4, -38, 8, 3); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-4, -35, 8, 1);
+          ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-8, -38, 1, 18); ctx.fillRect(7, -38, 1, 18); ctx.fillRect(-11, -30, 3, 1); ctx.fillRect(8, -30, 3, 1);
+          ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-8, -21, 16, 1);
       } else if (p.shirtStyle === 'vest') {
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(-4, -38, 8, 18);
-          ctx.fillStyle = '#888'; ctx.fillRect(-1, -32, 2, 2); ctx.fillRect(-1, -26, 2, 2);
-          ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(-8, -38, 2, 18); ctx.fillRect(6, -38, 2, 18);
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(-4, -38, 8, 18); ctx.fillStyle = '#888'; ctx.fillRect(-1, -32, 2, 2); ctx.fillRect(-1, -26, 2, 2); ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(-8, -38, 2, 18); ctx.fillRect(6, -38, 2, 18);
       }
-
       ctx.translate(0, -38); ctx.fillStyle = cSkin; ctx.fillRect(-9, -20, 18, 20);
-
       const eyeOffset = p.facing === 1 ? 2 : -2;
-      if (state.isBlinking) {
-        ctx.fillStyle = '#000'; ctx.fillRect(-6 + eyeOffset, -12, 5, 1); ctx.fillRect(1 + eyeOffset, -12, 5, 1);
-      } else {
-        ctx.fillStyle = '#fff'; ctx.fillRect(-6 + eyeOffset, -14, 5, 6); ctx.fillRect(1 + eyeOffset, -14, 5, 6);
-        ctx.fillStyle = p.colorEyes || '#000'; ctx.fillRect(-4 + eyeOffset, -12, 2, 3); ctx.fillRect(3 + eyeOffset, -12, 2, 3);
-      }
+      if (state.isBlinking) { ctx.fillStyle = '#000'; ctx.fillRect(-6 + eyeOffset, -12, 5, 1); ctx.fillRect(1 + eyeOffset, -12, 5, 1); } 
+      else { ctx.fillStyle = '#fff'; ctx.fillRect(-6 + eyeOffset, -14, 5, 6); ctx.fillRect(1 + eyeOffset, -14, 5, 6); ctx.fillStyle = p.colorEyes || '#000'; ctx.fillRect(-4 + eyeOffset, -12, 2, 3); ctx.fillRect(3 + eyeOffset, -12, 2, 3); }
       ctx.fillStyle = '#000'; ctx.fillRect(-3 + eyeOffset, -5, 6, 1);
-
-      const hairShift = p.facing === 1 ? 1 : -1;
-      ctx.fillStyle = p.colorHair || '#4a2e1b';
+      const hairShift = p.facing === 1 ? 1 : -1; ctx.fillStyle = p.colorHair || '#4a2e1b';
       if (p.hairStyle === 'short') { ctx.fillRect(-10 + hairShift, -22, 20, 6); }
-      else if (p.hairStyle === 'curly') {
-          ctx.beginPath();
-          ctx.arc(-8, -20, 4, 0, Math.PI*2);
-          ctx.arc(-2, -21, 4, 0, Math.PI*2);
-          ctx.arc(4, -21, 4, 0, Math.PI*2);
-          ctx.arc(10, -20, 4, 0, Math.PI*2);
-          ctx.fill();
-      }
+      else if (p.hairStyle === 'curly') { ctx.beginPath(); ctx.arc(-8, -20, 4, 0, Math.PI*2); ctx.arc(-2, -21, 4, 0, Math.PI*2); ctx.arc(4, -21, 4, 0, Math.PI*2); ctx.arc(10, -20, 4, 0, Math.PI*2); ctx.fill(); }
       else if (p.hairStyle === 'long') { ctx.fillRect(-12 + hairShift, -22, 24, 8); ctx.fillRect(-13 + hairShift, -14, 4, 16); ctx.fillRect(9 + hairShift, -14, 4, 16); }
-
-      if (p.hairStyle !== 'bald') {
-          ctx.fillStyle = 'rgba(255,255,255,0.2)';
-          ctx.fillRect(-8 + hairShift, -22, 6, 1);
-      }
-
-      if (p.nick) {
-        ctx.save();
-        ctx.scale(1/1.8, 1/1.8);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3;
-        ctx.strokeText(p.nick, 0, -110);
-        ctx.fillText(p.nick, 0, -110);
-        ctx.restore();
-      }
-
-      ctx.restore();
-      ctx.restore();
+      if (p.hairStyle !== 'bald') { ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-8 + hairShift, -22, 6, 1); }
+      if (p.nick) { ctx.save(); ctx.scale(1/1.8, 1/1.8); ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeText(p.nick, 0, -110); ctx.fillText(p.nick, 0, -110); ctx.restore(); }
+      ctx.restore(); ctx.restore();
     }
 
     function drawWardrobe(camX, floorLine) {
@@ -467,51 +285,23 @@
 
     function drawDoors(camX, floorLine) {
       for (let i = 0; i < DOORS.length; i++) {
-        const d = DOORS[i];
-        const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue;
+        const d = DOORS[i]; const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue;
         const dh = 140, dw = 90, dy = floorLine - dh, dxPos = dx - dw/2;
         ctx.save();
-        
-        // Рисуем саму дверь
         ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); 
         ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
-        
-        // Дверная ручка / узор
-        ctx.fillStyle = '#4a3020'; 
-        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore(); 
-        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
-        
-        // Болты
         ctx.fillStyle = '#888'; 
-        ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); 
-        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); 
-        ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); 
-        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
 
         if (i === 0) {
-            // Первая дверь - Скачки (Открыта)
-            ctx.fillStyle = 'rgba(0,0,0,0.9)'; 
-            ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
-            ctx.strokeStyle = '#00ff00'; 
-            ctx.lineWidth = 2; 
-            ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
-            ctx.fillStyle = '#00ff00'; 
-            ctx.font = 'bold 14px sans-serif'; 
-            ctx.textAlign = 'center'; 
-            ctx.fillText('СКАЧКИ', dx, dy - 22); 
-            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.fillStyle = '#00ff00'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('СКАЧКИ', dx, dy - 22); ctx.textAlign = 'left';
         } else {
-            // Остальные двери - Закрыты
-            ctx.fillStyle = 'rgba(0,0,0,0.9)'; 
-            ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
-            ctx.strokeStyle = '#ff0000'; 
-            ctx.lineWidth = 2; 
-            ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
-            ctx.fillStyle = '#ff0000'; 
-            ctx.font = 'bold 14px sans-serif'; 
-            ctx.textAlign = 'center'; 
-            ctx.fillText('ЗАКРЫТО', dx, dy - 22); 
-            ctx.textAlign = 'left';
+            ctx.fillStyle = '#4a3020'; ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore(); ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
+            ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЗАКРЫТО', dx, dy - 22); ctx.textAlign = 'left';
         }
         ctx.restore();
       }
@@ -519,42 +309,21 @@
 
     function draw() {
       const w = canvas.width, h = canvas.height; const camX = Math.floor(state.camera.x);
-
-      state.floorLine = h - 80;
-      const floorY = state.floorLine;
-
+      state.floorLine = h - 80; const floorY = state.floorLine;
       const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1a0a2e'); bg.addColorStop(0.7, '#2a1040'); bg.addColorStop(1, '#0a0512'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       ctx.strokeStyle = 'rgba(122, 60, 255, 0.15)'; ctx.lineWidth = 15; for (let x = Math.floor(camX / 600) * 600; x < camX + w + 600; x += 600) { ctx.beginPath(); ctx.arc(x - camX + 300, state.floorLine - 150, 250, Math.PI, 0); ctx.stroke(); }
-
       const tile = 40; for (let x = Math.floor(camX / tile) * tile; x < camX + w + tile; x += tile) { for (let y = floorY; y < h; y += tile) { const sx = x - camX; const isEven = (Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0; ctx.fillStyle = isEven ? '#1a0f2a' : '#2a1040'; ctx.fillRect(sx, y, tile, tile); } }
       ctx.fillStyle = '#4a3a70'; ctx.fillRect(0, floorY, w, 4);
-
       drawWardrobe(camX, floorY); drawDoors(camX, floorY);
-
-      ctx.save();
-      for (const pt of state.particles) {
-          ctx.globalAlpha = Math.max(0, pt.life);
-          ctx.fillStyle = pt.color;
-          ctx.fillRect(pt.x - camX, pt.y, pt.size || 3, pt.size || 3);
-      }
-      ctx.restore();
-
+      ctx.save(); for (const pt of state.particles) { ctx.globalAlpha = Math.max(0, pt.life); ctx.fillStyle = pt.color; ctx.fillRect(pt.x - camX, pt.y, pt.size || 3, pt.size || 3); } ctx.restore();
       for (let id in state.otherPlayers) { const other = state.otherPlayers[id]; drawCharacter(other, camX, floorY); }
       drawCharacter({ ...state.player, nick: state.nick }, camX, floorY);
     }
 
     let lastTime = 0;
-    function loop(t) {
-      if (!state.loggedIn) return; const dt = Math.min(50, t - lastTime) / 16.67; lastTime = t; updatePhysics(dt); draw();
-      requestAnimationFrame(loop);
-    }
+    function loop(t) { if (!state.loggedIn) return; const dt = Math.min(50, t - lastTime) / 16.67; lastTime = t; updatePhysics(dt); draw(); requestAnimationFrame(loop); }
     function resizeCanvas() { const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; state.floorLine = canvas.height - 80; }
-
-    let resizeTimer = null;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (state.loggedIn) resizeCanvas(); }, 100);
-    });
+    let resizeTimer = null; window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.loggedIn) resizeCanvas(); }, 100); });
 
     chatToggleBtn.addEventListener('click', () => { chatPanel.classList.add('open'); chatInput.focus(); });
     closeChatBtn.addEventListener('click', () => { chatPanel.classList.remove('open'); chatInput.blur(); });
@@ -571,55 +340,23 @@
     btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); tryJump(); }, {passive: false});
     function tryJump() { if (state.player.onGround) { state.player.vy = JUMP_FORCE; state.player.onGround = false; } }
 
-    const colorsData = {
-        skin: ['#ffdbac', '#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#5c3a21', '#3b2314', '#ffffff'],
-        hair: ['#ff0000', '#ffd700', '#000000', '#8b4513', '#ffffff', '#ff6b9d', '#0000ff', '#00ff00'],
-        eyes: ['#000000', '#8b4513', '#0000ff', '#008000', '#ff0000', '#800080', '#ffff00'],
-        shirt: ['#ffffff', '#000000', '#ff0000', '#0000ff', '#008000', '#ffff00', '#800080', '#ffc0cb', '#808080', '#ffa500'],
-        pants: ['#1a1a1a', '#4a3a70', '#2a1040', '#006400', '#8b4513', '#000080', '#808080', '#ff6ad5', '#ff0000']
-    };
-
-    const PARTICLE_OPTIONS = [
-      { id: 'gold',     label: 'Золотые',   dot: 'radial-gradient(circle at 35% 35%, #fff3b0, #ffd700 60%, #b8860b 100%)' },
-      { id: 'colorful', label: 'Цветные',   dot: 'conic-gradient(#ff0044, #ffaa00, #ffee00, #00cc66, #0088ff, #aa44ff, #ff0044)' },
-      { id: 'fire',     label: 'Огненные',  dot: 'radial-gradient(circle at 50% 70%, #ffdd00, #ff8800 45%, #ff3300 80%, #7a0000 100%)' },
-      { id: 'none',     label: 'Без частиц', dot: 'linear-gradient(135deg, #444, #222)' },
-    ];
-
+    const colorsData = { skin: ['#ffdbac', '#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#5c3a21', '#3b2314', '#ffffff'], hair: ['#ff0000', '#ffd700', '#000000', '#8b4513', '#ffffff', '#ff6b9d', '#0000ff', '#00ff00'], eyes: ['#000000', '#8b4513', '#0000ff', '#008000', '#ff0000', '#800080', '#ffff00'], shirt: ['#ffffff', '#000000', '#ff0000', '#0000ff', '#008000', '#ffff00', '#800080', '#ffc0cb', '#808080', '#ffa500'], pants: ['#1a1a1a', '#4a3a70', '#2a1040', '#006400', '#8b4513', '#000080', '#808080', '#ff6ad5', '#ff0000'] };
+    const PARTICLE_OPTIONS = [ { id: 'gold', label: 'Золотые', dot: 'radial-gradient(circle at 35% 35%, #fff3b0, #ffd700 60%, #b8860b 100%)' }, { id: 'colorful', label: 'Цветные', dot: 'conic-gradient(#ff0044, #ffaa00, #ffee00, #00cc66, #0088ff, #aa44ff, #ff0044)' }, { id: 'fire', label: 'Огненные', dot: 'radial-gradient(circle at 50% 70%, #ffdd00, #ff8800 45%, #ff3300 80%, #7a0000 100%)' }, { id: 'none', label: 'Без частиц', dot: 'linear-gradient(135deg, #444, #222)' } ];
     const APPEARANCE_KEYS = ['colorSkin','colorHair','hairStyle','colorEyes','colorShirt','shirtStyle','colorPants','particleType'];
 
-    function openWardrobe() {
-      tempAppearance = { ...state.player };
-      wardrobeScreen.classList.add('open');
-      openCategory('skin');
-      if (previewAnimId) cancelAnimationFrame(previewAnimId);
-      previewAnimId = null;
-      drawPreviewLoop();
-    }
+    function openWardrobe() { tempAppearance = { ...state.player }; wardrobeScreen.classList.add('open'); openCategory('skin'); if (previewAnimId) cancelAnimationFrame(previewAnimId); previewAnimId = null; drawPreviewLoop(); }
     closeWardrobeBtn.addEventListener('click', () => { wardrobeScreen.classList.remove('open'); });
     wearBtn.addEventListener('click', () => {
       APPEARANCE_KEYS.forEach(k => { state.player[k] = tempAppearance[k]; });
       wardrobeScreen.classList.remove('open');
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        const payload = {};
-        APPEARANCE_KEYS.forEach(k => { payload[k] = state.player[k]; });
-        ws.send(JSON.stringify({ type: 'updateAppearance', appearance: payload }));
-      }
+      if (ws && ws.readyState === WebSocket.OPEN) { const payload = {}; APPEARANCE_KEYS.forEach(k => { payload[k] = state.player[k]; }); ws.send(JSON.stringify({ type: 'updateAppearance', appearance: payload })); }
     });
     closePanelBtn.addEventListener('click', () => { optionsPanel.classList.remove('open'); });
-
-    document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            openCategory(e.currentTarget.dataset.category);
-        });
-    });
+    document.querySelectorAll('.cat-btn').forEach(btn => { btn.addEventListener('click', (e) => { document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); e.currentTarget.classList.add('active'); openCategory(e.currentTarget.dataset.category); }); });
 
     function openCategory(cat) {
         panelTitle.textContent = cat === 'skin' ? 'Кожа' : cat === 'hair' ? 'Волосы' : cat === 'eyes' ? 'Глаза' : cat === 'shirt' ? 'Одежда' : cat === 'pants' ? 'Штаны' : 'Частицы';
         colorPalette.innerHTML = ''; panelContent.innerHTML = ''; optionsPanel.classList.add('open');
-
         if (cat === 'shirt') {
             const styles = [{n:'Футболка', v:'tshirt'}, {n:'Жилетка', v:'vest'}];
             const row = document.createElement('div'); row.style.width = '100%'; row.style.display = 'flex'; row.style.gap = '10px'; row.style.marginBottom = '10px';
@@ -631,33 +368,20 @@
             styles.forEach(s => { const b = document.createElement('button'); b.className = 'opt-btn'; if (tempAppearance.hairStyle === s.v) b.classList.add('active'); b.textContent = s.n; b.onclick = () => { tempAppearance.hairStyle = s.v; openCategory('hair'); }; row.appendChild(b); });
             panelContent.appendChild(row);
         } else if (cat === 'particles') {
-            const row = document.createElement('div');
-            row.style.width = '100%';
-            row.style.display = 'flex';
-            row.style.gap = '10px';
-            row.style.flexWrap = 'wrap';
+            const row = document.createElement('div'); row.style.width = '100%'; row.style.display = 'flex'; row.style.gap = '10px'; row.style.flexWrap = 'wrap';
             PARTICLE_OPTIONS.forEach(opt => {
-                const b = document.createElement('button');
-                b.className = 'opt-btn particle-opt';
-                if ((tempAppearance.particleType || 'none') === opt.id) b.classList.add('active');
-                const dot = document.createElement('span');
-                dot.className = 'p-dot';
-                dot.style.background = opt.dot;
-                const label = document.createElement('span');
-                label.className = 'p-label';
-                label.textContent = opt.label;
-                b.appendChild(dot); b.appendChild(label);
-                b.onclick = () => { tempAppearance.particleType = opt.id; openCategory('particles'); };
+                const b = document.createElement('button'); b.className = 'opt-btn particle-opt'; if ((tempAppearance.particleType || 'none') === opt.id) b.classList.add('active');
+                const dot = document.createElement('span'); dot.className = 'p-dot'; dot.style.background = opt.dot;
+                const label = document.createElement('span'); label.className = 'p-label'; label.textContent = opt.label;
+                b.appendChild(dot); b.appendChild(label); b.onclick = () => { tempAppearance.particleType = opt.id; openCategory('particles'); };
                 row.appendChild(b);
             });
             panelContent.appendChild(row);
         }
-
         if (colorsData[cat]) {
             const colorKey = cat === 'skin' ? 'colorSkin' : cat === 'hair' ? 'colorHair' : cat === 'eyes' ? 'colorEyes' : cat === 'shirt' ? 'colorShirt' : 'colorPants';
             colorsData[cat].forEach(color => {
-                const btn = document.createElement('div'); btn.className = 'color-btn'; btn.style.backgroundColor = color;
-                if (tempAppearance[colorKey] === color) btn.classList.add('active');
+                const btn = document.createElement('div'); btn.className = 'color-btn'; btn.style.backgroundColor = color; if (tempAppearance[colorKey] === color) btn.classList.add('active');
                 btn.onclick = () => { tempAppearance[colorKey] = color; openCategory(cat); };
                 colorPalette.appendChild(btn);
             });
@@ -668,93 +392,47 @@
     function drawPreviewLoop() {
         if (!wardrobeScreen.classList.contains('open')) return;
         pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-
         pCtx.fillStyle = '#1a0a2e'; pCtx.fillRect(0, previewCanvas.height - 80, previewCanvas.width, 80);
         pCtx.fillStyle = '#2a1040'; for(let i=0; i<previewCanvas.width; i+=40) { pCtx.fillRect(i, previewCanvas.height - 80, 38, 38); }
-
         pCtx.save(); pCtx.translate(previewCanvas.width / 2, previewCanvas.height - 80); pCtx.scale(6, 6);
-
         const p = tempAppearance;
-
         pCtx.fillStyle = p.colorPants || '#228b22'; pCtx.fillRect(-7, -18, 6, 18); pCtx.fillRect(1, -18, 6, 18);
         pCtx.fillStyle = 'rgba(0,0,0,0.3)'; pCtx.fillRect(-6, -14, 4, 4); pCtx.fillRect(2, -14, 4, 4);
         pCtx.fillStyle = '#111'; pCtx.fillRect(-7, -4, 6, 4); pCtx.fillRect(1, -4, 6, 4);
-
         pCtx.fillStyle = p.colorSkin || '#f1c27d'; pCtx.fillRect(-8, -38, 16, 18);
         pCtx.fillStyle = p.colorShirt || '#20b2aa'; pCtx.fillRect(-8, -38, 16, 18);
-
         if (p.shirtStyle === 'tshirt') {
-            const shirtColor = p.colorShirt || '#20b2aa';
-            pCtx.fillStyle = shirtColor;
-            pCtx.fillRect(-8, -38, 16, 18);
-            pCtx.fillRect(-11, -37, 3, 7);
-            pCtx.fillRect(8, -37, 3, 7);
-            pCtx.fillStyle = 'rgba(0,0,0,0.35)';
-            pCtx.fillRect(-4, -38, 8, 3);
-            pCtx.fillStyle = 'rgba(255,255,255,0.25)';
-            pCtx.fillRect(-4, -35, 8, 1);
-            pCtx.fillStyle = 'rgba(0,0,0,0.25)';
-            pCtx.fillRect(-8, -38, 1, 18);
-            pCtx.fillRect(7, -38, 1, 18);
-            pCtx.fillRect(-11, -30, 3, 1);
-            pCtx.fillRect(8, -30, 3, 1);
-            pCtx.fillStyle = 'rgba(0,0,0,0.3)';
-            pCtx.fillRect(-8, -21, 16, 1);
+            const shirtColor = p.colorShirt || '#20b2aa'; pCtx.fillStyle = shirtColor; pCtx.fillRect(-8, -38, 16, 18); pCtx.fillRect(-11, -37, 3, 7); pCtx.fillRect(8, -37, 3, 7);
+            pCtx.fillStyle = 'rgba(0,0,0,0.35)'; pCtx.fillRect(-4, -38, 8, 3); pCtx.fillStyle = 'rgba(255,255,255,0.25)'; pCtx.fillRect(-4, -35, 8, 1);
+            pCtx.fillStyle = 'rgba(0,0,0,0.25)'; pCtx.fillRect(-8, -38, 1, 18); pCtx.fillRect(7, -38, 1, 18); pCtx.fillRect(-11, -30, 3, 1); pCtx.fillRect(8, -30, 3, 1);
+            pCtx.fillStyle = 'rgba(0,0,0,0.3)'; pCtx.fillRect(-8, -21, 16, 1);
         } else if (p.shirtStyle === 'vest') {
-            pCtx.fillStyle = '#ffffff'; pCtx.fillRect(-4, -38, 8, 18);
-            pCtx.fillStyle = '#888'; pCtx.fillRect(-1, -32, 2, 2); pCtx.fillRect(-1, -26, 2, 2);
+            pCtx.fillStyle = '#ffffff'; pCtx.fillRect(-4, -38, 8, 18); pCtx.fillStyle = '#888'; pCtx.fillRect(-1, -32, 2, 2); pCtx.fillRect(-1, -26, 2, 2);
         }
-
         pCtx.fillStyle = p.colorSkin || '#f1c27d'; pCtx.fillRect(-11, -34, 4, 15); pCtx.fillRect(7, -34, 4, 15);
-
         pCtx.translate(0, -38); pCtx.fillStyle = p.colorSkin || '#f1c27d'; pCtx.fillRect(-9, -20, 18, 20);
         pCtx.fillStyle = '#fff'; pCtx.fillRect(-6, -14, 5, 6); pCtx.fillRect(1, -14, 5, 6); pCtx.fillStyle = p.colorEyes || '#000'; pCtx.fillRect(-4, -12, 2, 3); pCtx.fillRect(3, -12, 2, 3);
         pCtx.fillStyle = '#000'; pCtx.fillRect(-3, -5, 6, 1);
-
         pCtx.fillStyle = p.colorHair || '#4a2e1b';
         if (p.hairStyle === 'short') pCtx.fillRect(-10, -22, 20, 6);
         else if (p.hairStyle === 'long') { pCtx.fillRect(-12, -22, 24, 8); pCtx.fillRect(-13, -14, 4, 16); pCtx.fillRect(9, -14, 4, 16); }
         else if (p.hairStyle === 'curly') { pCtx.beginPath(); pCtx.arc(-8, -20, 4, 0, Math.PI*2); pCtx.arc(-2, -21, 4, 0, Math.PI*2); pCtx.arc(4, -21, 4, 0, Math.PI*2); pCtx.arc(10, -20, 4, 0, Math.PI*2); pCtx.fill(); }
-
         pCtx.restore();
-
         drawParticlePreview();
-
         previewAnimId = requestAnimationFrame(drawPreviewLoop);
     }
 
     let previewParticles = [];
     function drawParticlePreview() {
-        const prof = PARTICLE_PROFILES[tempAppearance.particleType];
-        const centerX = previewCanvas.width / 2;
-        const baseY = previewCanvas.height - 80;
-
-        if (prof && Math.random() < prof.spawnChance) {
-            previewParticles.push({
-                x: centerX + (Math.random() * 2 - 1) * (prof.spawnSpreadX * 6),
-                y: baseY - 5,
-                vx: (Math.random() * 2 - 1) * prof.vxRange * 2,
-                vy: (prof.vyMin + Math.random() * (prof.vyMax - prof.vyMin)) * 2,
-                life: 1,
-                color: prof.pickColor(),
-                size: prof.size * 2,
-            });
-        }
-
+        const prof = PARTICLE_PROFILES[tempAppearance.particleType]; const centerX = previewCanvas.width / 2; const baseY = previewCanvas.height - 80;
+        if (prof && Math.random() < prof.spawnChance) { previewParticles.push({ x: centerX + (Math.random() * 2 - 1) * (prof.spawnSpreadX * 6), y: baseY - 5, vx: (Math.random() * 2 - 1) * prof.vxRange * 2, vy: (prof.vyMin + Math.random() * (prof.vyMax - prof.vyMin)) * 2, life: 1, color: prof.pickColor(), size: prof.size * 2 }); }
         for (let i = previewParticles.length - 1; i >= 0; i--) {
-            const pt = previewParticles[i];
-            pt.x += pt.vx;
-            pt.y += pt.vy;
-            pt.vy += (prof ? prof.gravity : 0) * 2;
-            pt.life -= (prof ? prof.decay : 0.02);
+            const pt = previewParticles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.vy += (prof ? prof.gravity : 0) * 2; pt.life -= (prof ? prof.decay : 0.02);
             if (pt.life <= 0) { previewParticles.splice(i, 1); continue; }
-
-            pCtx.globalAlpha = Math.max(0, pt.life);
-            pCtx.fillStyle = pt.color;
-            pCtx.fillRect(pt.x, pt.y, pt.size, pt.size);
+            pCtx.globalAlpha = Math.max(0, pt.life); pCtx.fillStyle = pt.color; pCtx.fillRect(pt.x, pt.y, pt.size, pt.size);
         }
         pCtx.globalAlpha = 1;
     }
   </script>
 </body>
-</html>
+  </html>
