@@ -154,7 +154,6 @@
     </div>
   </div>
 
-  <!-- ГАРДЕРОБ -->
   <div id="wardrobeScreen">
     <div class="wardrobe-preview">
       <canvas id="previewCanvas" width="400" height="600"></canvas>
@@ -190,7 +189,6 @@
     const DOORS = [{ id: 'd1', x: 800 }, { id: 'd2', x: 1000 }, { id: 'd3', x: 1200 }, { id: 'd4', x: 1400 }];
     const JUMP_FORCE = -11;
 
-    // ТВОЙ СЕРВЕР RENDER
     const WS_HOST = 'wss://door-circus.onrender.com'; 
 
     const state = {
@@ -210,26 +208,9 @@
     };
 
     const PARTICLE_PROFILES = {
-      gold: {
-        spawnChance: 0.35, spawnSpreadX: 5, vxRange: 0.75,
-        vyMin: -2.8, vyMax: -1.0, gravity: 0.04, decay: 0.018, size: 3,
-        pickColor: () => (Math.random() < 0.5 ? '#ffd700' : '#ffe680'),
-      },
-      colorful: {
-        spawnChance: 0.45, spawnSpreadX: 7, vxRange: 1.1,
-        vyMin: -3.2, vyMax: -1.2, gravity: 0.02, decay: 0.022, size: 3,
-        pickColor: () => `hsl(${Math.random() * 360}, 100%, 60%)`,
-      },
-      fire: {
-        spawnChance: 0.6, spawnSpreadX: 4, vxRange: 0.6,
-        vyMin: -4.0, vyMax: -2.2, gravity: -0.02, decay: 0.04, size: 4,
-        pickColor: () => {
-          const t = Math.random();
-          if (t < 0.5) return '#ffdd00';
-          if (t < 0.8) return '#ff8800';
-          return '#ff3300';
-        },
-      },
+      gold: { spawnChance: 0.35, spawnSpreadX: 5, vxRange: 0.75, vyMin: -2.8, vyMax: -1.0, gravity: 0.04, decay: 0.018, size: 3, pickColor: () => (Math.random() < 0.5 ? '#ffd700' : '#ffe680') },
+      colorful: { spawnChance: 0.45, spawnSpreadX: 7, vxRange: 1.1, vyMin: -3.2, vyMax: -1.2, gravity: 0.02, decay: 0.022, size: 3, pickColor: () => `hsl(${Math.random() * 360}, 100%, 60%)` },
+      fire: { spawnChance: 0.6, spawnSpreadX: 4, vxRange: 0.6, vyMin: -4.0, vyMax: -2.2, gravity: -0.02, decay: 0.04, size: 4, pickColor: () => { const t = Math.random(); if (t < 0.5) return '#ffdd00'; if (t < 0.8) return '#ff8800'; return '#ff3300'; } },
       none: null,
     };
 
@@ -283,7 +264,13 @@
     logoutBtn.addEventListener('click', () => { if (ws) { try { ws.close(); } catch(_) {} ws = null; } state.loggedIn = false; lobbyScreen.classList.remove('active'); loginScreen.classList.add('active'); });
 
     interactBtn.addEventListener('click', () => {
-      if (state.nearInteract === 'wardrobe') { openWardrobe(); }
+      if (state.nearInteract === 'wardrobe') { 
+          openWardrobe(); 
+      } else if (state.nearInteract === 'race') {
+          // Перекидываем игрока в игру и передаем его данные
+          const skinData = encodeURIComponent(JSON.stringify(state.player));
+          window.location.href = `games/race/index.html?nick=${encodeURIComponent(state.nick)}&skin=${skinData}`;
+      }
     });
 
     let lastSentX = 0, sendTimer = 0;
@@ -308,8 +295,19 @@
       const px = p.x + p.w/2;
       state.nearInteract = null;
 
-      if (Math.abs(px - WARDROBE_X) < 70) { state.nearInteract = 'wardrobe'; interactBtn.textContent = '👗 Гардероб'; interactBtn.classList.add('show'); }
-      else { interactBtn.classList.remove('show'); }
+      if (Math.abs(px - WARDROBE_X) < 70) { 
+          state.nearInteract = 'wardrobe'; 
+          interactBtn.textContent = '👗 Гардероб'; 
+          interactBtn.classList.add('show'); 
+      } 
+      else if (Math.abs(px - DOORS[0].x) < 70) { 
+          state.nearInteract = 'race'; 
+          interactBtn.textContent = '🐎 Скачки'; 
+          interactBtn.classList.add('show'); 
+      } 
+      else { 
+          interactBtn.classList.remove('show'); 
+      }
 
       state.time += dt; state.blinkTimer += dt; if (state.blinkTimer > 180) { state.isBlinking = true; if (state.blinkTimer > 190) { state.isBlinking = false; state.blinkTimer = 0; } }
 
@@ -438,7 +436,6 @@
           ctx.fillRect(-8 + hairShift, -22, 6, 1);
       }
 
-      // Отрисовка ника
       if (p.nick) {
         ctx.save();
         ctx.scale(1/1.8, 1/1.8);
@@ -469,14 +466,53 @@
     }
 
     function drawDoors(camX, floorLine) {
-      for (const d of DOORS) {
+      for (let i = 0; i < DOORS.length; i++) {
+        const d = DOORS[i];
         const dx = d.x - camX; if (dx < -100 || dx > canvas.width + 100) continue;
         const dh = 140, dw = 90, dy = floorLine - dh, dxPos = dx - dw/2;
         ctx.save();
-        ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
-        ctx.fillStyle = '#4a3020'; ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore(); ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
-        ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 2; ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); ctx.fillStyle = '#ff0000'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЗАКРЫТО', dx, dy - 22); ctx.textAlign = 'left';
+        
+        // Рисуем саму дверь
+        ctx.fillStyle = '#111'; ctx.fillRect(dxPos - 6, dy - 6, dw + 12, dh + 12); 
+        ctx.fillStyle = '#2a1a3a'; ctx.fillRect(dxPos, dy, dw, dh);
+        
+        // Дверная ручка / узор
+        ctx.fillStyle = '#4a3020'; 
+        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore(); 
+        ctx.save(); ctx.translate(dxPos + dw/2, dy + dh/2); ctx.rotate(-Math.PI / 4); ctx.fillRect(-dw, -10, dw * 2, 20); ctx.restore();
+        
+        // Болты
+        ctx.fillStyle = '#888'; 
+        ctx.beginPath(); ctx.arc(dxPos + 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); 
+        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + 5, 3, 0, Math.PI*2); ctx.fill(); 
+        ctx.beginPath(); ctx.arc(dxPos + 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill(); 
+        ctx.beginPath(); ctx.arc(dxPos + dw - 5, dy + dh - 5, 3, 0, Math.PI*2); ctx.fill();
+
+        if (i === 0) {
+            // Первая дверь - Скачки (Открыта)
+            ctx.fillStyle = 'rgba(0,0,0,0.9)'; 
+            ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.strokeStyle = '#00ff00'; 
+            ctx.lineWidth = 2; 
+            ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.fillStyle = '#00ff00'; 
+            ctx.font = 'bold 14px sans-serif'; 
+            ctx.textAlign = 'center'; 
+            ctx.fillText('СКАЧКИ', dx, dy - 22); 
+            ctx.textAlign = 'left';
+        } else {
+            // Остальные двери - Закрыты
+            ctx.fillStyle = 'rgba(0,0,0,0.9)'; 
+            ctx.fillRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.strokeStyle = '#ff0000'; 
+            ctx.lineWidth = 2; 
+            ctx.strokeRect(dxPos - 20, dy - 40, dw + 40, 25); 
+            ctx.fillStyle = '#ff0000'; 
+            ctx.font = 'bold 14px sans-serif'; 
+            ctx.textAlign = 'center'; 
+            ctx.fillText('ЗАКРЫТО', dx, dy - 22); 
+            ctx.textAlign = 'left';
+        }
         ctx.restore();
       }
     }
@@ -721,4 +757,4 @@
     }
   </script>
 </body>
-  </html>
+</html>
