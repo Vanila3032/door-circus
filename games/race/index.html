@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Steel Ball Run - Test</title>
+  <title>Steel Ball Run</title>
   <style>
     body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
     canvas { display: block; width: 100vw; height: 100vh; }
@@ -26,7 +26,27 @@
   </div>
 
 <script>
+// ==========================================
+// МЕСТО ДЛЯ ТВОЕЙ МУЗЫКИ (вставь ссылку в кавычки ниже)
 const MUSIC_URL = ''; 
+// ==========================================
+
+try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch (err) {}
+
+// Получаем ник и скин из памяти браузера
+const myNick = localStorage.getItem('recto_nick') || 'Игрок';
+let mySkin = null;
+try { 
+    const savedSkin = localStorage.getItem('recto_skin');
+    if (savedSkin) mySkin = JSON.parse(savedSkin); 
+} catch(e){}
+
+// Кнопка выхода в лобби
+const backBtn = document.createElement('button');
+backBtn.innerText = 'В ЛОББИ';
+backBtn.style.cssText = 'position:absolute; top:15px; left:15px; z-index:100; padding:12px 18px; background:rgba(0,0,0,0.7); color:white; border:2px solid white; border-radius:10px; font-weight:bold; font-family:sans-serif; font-size:16px;';
+backBtn.onclick = () => { window.location.href = '../../index.html'; };
+document.body.appendChild(backBtn);
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -196,7 +216,7 @@ function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   ctx.fillStyle = horseColor;
   ctx.fillRect(px + 10, py + 25 - bodyBob, 45, 25);
 
-  // ШЕЯ (Прямой блок, идущий вверх и вправо, чтобы не было горба)
+  // ШЕЯ
   ctx.fillStyle = horseColor;
   ctx.fillRect(px + 50, py + 5 - bodyBob, 15, 25);
   ctx.fillRect(px + 55, py - 5 - bodyBob, 10, 15);
@@ -205,7 +225,7 @@ function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   ctx.fillStyle = horseColor;
   ctx.fillRect(px + 65, py - 10 - bodyBob, 25, 15); 
   ctx.fillStyle = darkHorse;
-  ctx.fillRect(px + 88, py - 5 - bodyBob, 5, 5); // Морда
+  ctx.fillRect(px + 88, py - 5 - bodyBob, 5, 5);
 
   // Уши
   ctx.fillStyle = horseColor;
@@ -226,8 +246,8 @@ function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   ctx.fillRect(-10, 0, 8, 15); 
   ctx.fillRect(2, 0, 8, 15);
 
-  // Торс (Прямоугольник, а не квадрат)
-  ctx.fillStyle = '#2244aa';
+  // Торс (Берем цвет из скина)
+  ctx.fillStyle = (mySkin && mySkin.colorShirt) ? mySkin.colorShirt : '#2244aa';
   ctx.fillRect(-12, -28, 24, 28); 
   
   // Руки (держат поводья)
@@ -235,12 +255,12 @@ function drawHorseAndRider(px, py, isSlowed, isDead, walkTimer) {
   ctx.fillRect(8, -18, 15, 6); 
   ctx.fillRect(-2, -12, 10, 6);
 
-  // Голова (Приподнята на 2 пикселя)
-  ctx.fillStyle = '#f1c27d';
+  // Голова (Берем цвет кожи из скина)
+  ctx.fillStyle = (mySkin && mySkin.colorSkin) ? mySkin.colorSkin : '#f1c27d';
   ctx.fillRect(-8, -50, 20, 20);
   
-  // Волосы
-  ctx.fillStyle = '#4a2e1b';
+  // Волосы (Берем цвет волос из скина)
+  ctx.fillStyle = (mySkin && mySkin.colorHair) ? mySkin.colorHair : '#4a2e1b';
   ctx.fillRect(-8, -52, 20, 7); 
   
   // Глаза
@@ -389,4 +409,4 @@ function loop(t) {
 requestAnimationFrame(loop);
 </script>
 </body>
-  </html>
+</html>
